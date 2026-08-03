@@ -7,17 +7,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func CreateTable(db *sql.DB) (sql.Result, error) {
-	query := `CREATE TABLE IF NOT EXISTS movies (
-	id INTEGER PRIMARY KEY,
-	title TEXT NOT NULL,
-	releaseYear INTEGER NOT NULL,
-	duration INTEGER NOT NULL
-	)`
-
-	return db.Exec(query)
-}
-
 func main() {
 	db, err := sql.Open("sqlite3", "./movies.db")
 	if err != nil {
@@ -33,12 +22,27 @@ func main() {
 	// err = database.QueryRow("select sqlite_version()").Scan(&sqliteversion)
 
 	// fmt.Println(sqliteversion)
-	//
-	_, err = CreateTable(db)
+
+	//Create table for Movies
+	_, err = CreateTableMovies(db)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	fmt.Println("Table created successfully")
+	//Create table for Actors
+	_, err = CreateTableActors(db)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	//Create table for Genres
+	_, err = CreateTableGenres(db)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("All tables created successfully")
 }
