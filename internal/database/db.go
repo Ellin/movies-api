@@ -1,6 +1,9 @@
 package database
 
-import "database/sql"
+import (
+	"database/sql"
+	"fmt"
+)
 
 // OpenDB initializes a database connection pool for a given data source name (dns) or connection string.
 // The connection is tested before returning the sql.DB connection pool.
@@ -78,27 +81,27 @@ func createTableMoviesActors(db *sql.DB) (sql.Result, error) {
 func InitDB(db *sql.DB) error {
 	_, err := createTableGenres(db)
 	if err != nil {
-		return err
+		return fmt.Errorf("Creating genres table: %w", err)
 	}
 
 	_, err = createTableMovies(db)
 	if err != nil {
-		return err
+		return fmt.Errorf("Creating movies table: %w", err)
 	}
 
 	_, err = createTableActors(db)
 	if err != nil {
-		return err
+		return fmt.Errorf("Creating actors table: %w", err)
 	}
 
 	_, err = createTableGenresMovies(db)
 	if err != nil {
-		return err
+		return fmt.Errorf("Creating genres_movies table: %w", err)
 	}
 
 	_, err = createTableMoviesActors(db)
 	if err != nil {
-		return err
+		return fmt.Errorf("Creating movies_actors table: %w", err)
 	}
 
 	return nil
