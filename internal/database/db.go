@@ -51,6 +51,30 @@ func createTableActors(db *sql.DB) (sql.Result, error) {
 	return db.Exec(sql)
 }
 
+func createTableGenresMovies(db *sql.DB) (sql.Result, error) {
+	sql := `CREATE TABLE IF NOT EXISTS genres_movies (
+		genre_id INTEGER,
+		movie_id INTEGER,
+		PRIMARY KEY (genre_id, movie_id),
+		FOREIGN KEY (genre_id) REFERENCES genres (id),
+		FOREIGN KEY (movie_id) REFERENCES movies (id)
+	);`
+
+	return db.Exec(sql)
+}
+
+func createTableMoviesActors(db *sql.DB) (sql.Result, error) {
+	sql := `CREATE TABLE IF NOT EXISTS movies_actors (
+		movie_id INTEGER,
+		actor_id INTEGER,
+		PRIMARY KEY (movie_id, actor_id),
+		FOREIGN KEY (movie_id) REFERENCES movies (id),
+		FOREIGN KEY (actor_id) REFERENCES actors (id)
+	);`
+
+	return db.Exec(sql)
+}
+
 func InitDB(db *sql.DB) error {
 	_, err := createTableGenres(db)
 	if err != nil {
@@ -63,6 +87,16 @@ func InitDB(db *sql.DB) error {
 	}
 
 	_, err = createTableActors(db)
+	if err != nil {
+		return err
+	}
+
+	_, err = createTableGenresMovies(db)
+	if err != nil {
+		return err
+	}
+
+	_, err = createTableMoviesActors(db)
 	if err != nil {
 		return err
 	}
