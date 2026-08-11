@@ -6,7 +6,7 @@ type Genre struct {
 }
 
 type Movie struct {
-	ID          int
+	ID          int64
 	Title       string
 	ReleaseYear int
 	Duration    int
