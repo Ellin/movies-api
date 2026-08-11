@@ -37,10 +37,16 @@ func main() {
 		repo: &repository.Repo{DB: db},
 	}
 
-	genr := models.Genre{228, "blabla"}
+	genr := models.Genre{ID: 1, Name: "blabla"}
 
-	res, _ := app.repo.CreateGenre(genr)
+	res, err := app.repo.CreateGenre(genr)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	fmt.Println(res)
-	fmt.Println(app) // temp use of app so go doesn't give error
+	fmt.Println("Created with:", res)
+
+	fmt.Println(app.repo.GetGenreByID(res))
+
 }
