@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"log"
 	"movies-api/internal/database"
-	"movies-api/internal/models"
+	"movies-api/internal/repository"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 // application stores the app's dependencies
 type application struct {
-	repo *models.Repo
+	repo *repository.Repo
 }
 
 func main() {
@@ -33,7 +33,7 @@ func main() {
 
 	// Initialize the application's dependencies
 	app := application{
-		repo: &models.Repo{DB: db},
+		repo: &repository.Repo{DB: db},
 	}
 	fmt.Println(app) // temp use of app so go doesn't give error
 }
