@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"movies-api/internal/database"
+	"movies-api/internal/models"
 	"movies-api/internal/repository"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -35,5 +36,11 @@ func main() {
 	app := application{
 		repo: &repository.Repo{DB: db},
 	}
+
+	genr := models.Genre{228, "blabla"}
+
+	res, _ := app.repo.CreateGenre(genr)
+
+	fmt.Println(res)
 	fmt.Println(app) // temp use of app so go doesn't give error
 }
