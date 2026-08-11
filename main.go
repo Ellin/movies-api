@@ -1,44 +1,27 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
+	"log"
+	"movies-api/internal/database"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func CreateTable(db *sql.DB) (sql.Result, error) {
-	query := `CREATE TABLE IF NOT EXISTS movies (
-	id INTEGER PRIMARY KEY,
-	title TEXT NOT NULL,
-	releaseYear INTEGER NOT NULL,
-	duration INTEGER NOT NULL
-	)`
-
-	return db.Exec(query)
-}
-
 func main() {
-	db, err := sql.Open("sqlite3", "./movies.db")
+	db, err := database.OpenDB("./movies.db?_foreign_keys=on") // enforce foreign keys -> validate existence of rows referred to by foreign keys
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
-
 	defer db.Close()
 
-	fmt.Println("Connected to the SQLite database successfully.")
+	fmt.Println("Connected to SQLite database successfully.")
 
-	// var sqliteversion string
-	// err = database.QueryRow("select sqlite_version()").Scan(&sqliteversion)
-
-	// fmt.Println(sqliteversion)
-	//
-	_, err = CreateTable(db)
+	err = database.InitDB(db)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
-
-	fmt.Println("Table created successfully")
+	fmt.Println("Database tables initialized successfully.")
 }
