@@ -16,7 +16,7 @@ func (r *Repo) AddMovie(m models.Movie) (int64, error) {
 
 	result, err := r.DB.Exec(query, m.Title, m.ReleaseYear, m.Duration)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("adding movie: %w", err)
 	}
 
 	return result.LastInsertId()
@@ -34,7 +34,7 @@ func (r *Repo) GetMovie(id int64) (models.Movie, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return models.Movie{}, apperrors.ErrNoRecord
 		} else {
-			return models.Movie{}, err
+			return models.Movie{}, fmt.Errorf("getting movie: %w", err)
 		}
 	}
 
