@@ -37,7 +37,7 @@ func main() {
 		repo: &repository.Repo{DB: db},
 	}
 
-	genr := models.Genre{ID: 1, Name: "blabla"}
+	genr := models.Genre{ID: 1, Name: "Drama"}
 
 	res, err := app.repo.CreateGenre(genr)
 	if err != nil {
@@ -48,5 +48,7 @@ func main() {
 	fmt.Println("Created with:", res)
 
 	fmt.Println(app.repo.GetGenreByID(res))
+
+	fmt.Println(app.repo.GetAllGenres())
 
 }
