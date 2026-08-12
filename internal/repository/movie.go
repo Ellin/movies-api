@@ -54,7 +54,7 @@ func (r *Repo) UpdateMovie(m models.Movie) (int64, error) {
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return 0, fmt.Errorf("getting affected rows: %w", err)
+		return 0, fmt.Errorf("getting affected rows while updating movie: %w", err)
 	}
 
 	if rows == 0 {
@@ -64,4 +64,24 @@ func (r *Repo) UpdateMovie(m models.Movie) (int64, error) {
 	return rows, nil
 }
 
-// DELETE: Delete movie
+// DeleteMovie deletes the movie with match ID and returns the number of rows affected (DELETE)
+func (r *Repo) DeleteMovie(id int64) (int64, error) {
+	query := `DELETE FROM movies
+	where id = ?;`
+
+	result, err := r.DB.Exec(query, id)
+	if err != nil {
+		return 0, fmt.Errorf("deleting movie: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("getting affected rows while deleting movie: %w", err)
+	}
+
+	if rows == 0 {
+		return 0, apperrors.ErrNoRecord
+	}
+
+	return rows, nil
+}
