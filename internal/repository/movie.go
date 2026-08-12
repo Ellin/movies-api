@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"movies-api/internal/apperrors"
 	"movies-api/internal/models"
 )
 
@@ -32,7 +31,7 @@ func (r *Repo) GetMovie(id int64) (models.Movie, error) {
 	err := r.DB.QueryRow(query, id).Scan(&m.ID, &m.Title, &m.ReleaseYear, &m.Duration) // fill movie struct with data from found row
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return models.Movie{}, apperrors.ErrNoRecord
+			return models.Movie{}, ErrNotFound
 		} else {
 			return models.Movie{}, fmt.Errorf("getting movie: %w", err)
 		}
@@ -58,7 +57,7 @@ func (r *Repo) UpdateMovie(m models.Movie) (int64, error) {
 	}
 
 	if rows == 0 {
-		return 0, apperrors.ErrNoRecord
+		return 0, ErrNotFound
 	}
 
 	return rows, nil
@@ -80,7 +79,7 @@ func (r *Repo) DeleteMovie(id int64) (int64, error) {
 	}
 
 	if rows == 0 {
-		return 0, apperrors.ErrNoRecord
+		return 0, ErrNotFound
 	}
 
 	return rows, nil
