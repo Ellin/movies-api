@@ -11,4 +11,4 @@ type Repo struct {
 }
 
 // Unified error for non-existing records
-var ErrorNotFound = errors.New("record not found")
+var ErrNotFound = errors.New("record not found")

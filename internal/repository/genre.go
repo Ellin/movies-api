@@ -29,7 +29,7 @@ func (r *Repo) GetGenreByID(id int64) (*models.Genre, error) {
 	err := row.Scan(&genre.ID, &genre.Name)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrorNotFound
+			return nil, ErrNotFound
 		}
 		return nil, err
 	}
