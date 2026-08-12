@@ -4,6 +4,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"movies-api/internal/apperrors"
 	"movies-api/internal/models"
 )
@@ -35,12 +36,32 @@ func (r *Repo) GetMovie(id int64) (models.Movie, error) {
 		} else {
 			return models.Movie{}, err
 		}
-
 	}
 
 	return m, nil
 }
 
-// UPDATE: Update movie
+// UpdateMovie updates the movie with matching ID and returns the number of rows affected (UPDATE)
+func (r *Repo) UpdateMovie(m models.Movie) (int64, error) {
+	query := `UPDATE movies
+	SET title = ?, releaseYear = ?, duration = ?
+	WHERE id = ?;`
+
+	result, err := r.DB.Exec(query, m.Title, m.ReleaseYear, m.Duration, m.ID)
+	if err != nil {
+		return 0, fmt.Errorf("updating movie: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("getting affected rows: %w", err)
+	}
+
+	if rows == 0 {
+		return 0, apperrors.ErrNoRecord
+	}
+
+	return rows, nil
+}
 
 // DELETE: Delete movie
