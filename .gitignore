@@ -1,1 +1,5 @@
 movies.db
+actors.db
+genres.db
+movies_actors.db
+genres_movies.db
