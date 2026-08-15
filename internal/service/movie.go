@@ -24,7 +24,7 @@ type MovieSubmission struct {
 }
 
 // For movies, your service should allow adding new movies with their title, release year, duration, associated genre, and actors.
-func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (int64, error) {
+func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (models.Movie, error) {
 	//  Validate release year
 
 	// Validate duration
@@ -33,7 +33,7 @@ func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (int6
 
 	// Validate ActorIDs
 
-	movieReq := models.Movie{
+	newMovie := models.Movie{
 		Title:       sub.Title,
 		ReleaseYear: sub.ReleaseYear,
 		Duration:    sub.Duration,
@@ -42,10 +42,10 @@ func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (int6
 	}
 
 	// add movie into movies table
-	id, err := ms.repo.AddMovie(ctx, movieReq)
+	movie, err := ms.repo.AddMovie(ctx, newMovie)
 
-	return id, err
-
+	// returned movie includes a newly generated id
+	return movie, err
 }
 
 // You'll need functions to retrieve all movies, fetch a specific movie by ID, and filter movies by genre or release year.

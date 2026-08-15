@@ -6,12 +6,12 @@ type Genre struct {
 }
 
 type Movie struct {
-	ID          int64
-	Title       string
-	ReleaseYear int
-	Duration    int
-	GenreIDs    []int
-	ActorIDs    []int
+	ID          int64  `json:"id"`
+	Title       string `json:"title"`
+	ReleaseYear int    `json:"release_year"`
+	Duration    int    `json:"duration"`
+	GenreIDs    []int  `json:"genre_ids"`
+	ActorIDs    []int  `json:"actor_ids"`
 }
 
 type Actor struct {
