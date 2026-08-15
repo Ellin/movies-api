@@ -14,25 +14,11 @@ import (
 func (app *application) postMovie(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var request struct {
-		Title       string `json:"title"`
-		ReleaseYear int    `json:"release_year"`
-		Duration    int    `json:"duration"`
-		GenreIDs    []int  `json:"genre_ids"`
-		ActorIDs    []int  `json:"actor_ids"`
-	}
+	sub := service.MovieSubmission{}
 
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&sub); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
-	}
-
-	sub := service.MovieSubmission{
-		Title:       request.Title,
-		ReleaseYear: request.ReleaseYear,
-		Duration:    request.Duration,
-		GenreIDs:    request.GenreIDs,
-		ActorIDs:    request.ActorIDs,
 	}
 
 	movie, err := app.movieService.AddMovie(ctx, sub)
@@ -41,6 +27,8 @@ func (app *application) postMovie(w http.ResponseWriter, r *http.Request) {
 			log.Println("client disconnected before add movie finished")
 		} else {
 			http.Error(w, err.Error(), http.StatusBadRequest)
+
+			// ! TO DO - UPDATE ERROR HANDLING: distinguish between invalid/bad requests and internal server errors. Do not expose internal server error messages.
 		}
 		return
 	}
