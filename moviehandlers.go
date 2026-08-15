@@ -39,7 +39,20 @@ func (app *application) postMovie(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) getAllMovies(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 
+	movies, err := app.movieService.GetAllMovies(ctx)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			log.Println("client disconnected before get movie finished")
+		} else {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(movies)
 }
 
 // get by ID

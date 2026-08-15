@@ -60,6 +60,10 @@ func (ms *MovieService) GetMovie(ctx context.Context, id int64) (models.Movie, e
 	return movie, err
 }
 
+func (ms *MovieService) GetAllMovies(ctx context.Context) ([]models.MovieDetail, error) {
+	return ms.repo.GetAllMovies(ctx)
+}
+
 // Don't forget to implement a way to get all actors in a specific movie.
 
 // Updating a movie's details (including its title, release year, duration, genre, and actors) and removing a movie should also be supported.
