@@ -2,6 +2,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -9,26 +10,71 @@ import (
 )
 
 // AddMovie inserts a new movie into the movies table (CREATE)
-func (r *Repo) AddMovie(m models.Movie) (int64, error) {
+func (r *Repo) AddMovie(ctx context.Context, m models.Movie) (int64, error) {
+	// Create helper for failure results
+	fail := func(err error) (int64, error) {
+		return 0, fmt.Errorf("AddMovie: %w", err)
+	}
+
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return fail(err)
+	}
+	defer tx.Rollback()
+
+	// Insert into movies table
 	query := `INSERT INTO movies (title, releaseYear, duration)
 	VALUES (?, ?, ?);`
 
-	result, err := r.DB.Exec(query, m.Title, m.ReleaseYear, m.Duration)
+	result, err := tx.ExecContext(ctx, query, m.Title, m.ReleaseYear, m.Duration)
 	if err != nil {
 		return 0, fmt.Errorf("adding movie: %w", err)
 	}
 
-	return result.LastInsertId()
+	// Get newly inserted movie ID
+	m.ID, err = result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("getting inserted ID while adding movie: %w", err)
+	}
+
+	// Insert into genres_movies table
+	for _, genreID := range m.GenreIDs {
+		query := `INSERT INTO genres_movies (genre_id, movie_id)
+		VALUES (?, ?);`
+
+		_, err = tx.ExecContext(ctx, query, genreID, m.ID)
+		if err != nil {
+			return 0, fmt.Errorf("getting inserted ID while adding movie: %w", err)
+		}
+	}
+
+	// Insert into movies_actors table
+	for _, actorID := range m.ActorIDs {
+		query := `INSERT INTO movies_actors (movie_id, actor_id)
+		VALUES (?, ?);`
+
+		_, err = tx.ExecContext(ctx, query, m.ID, actorID)
+		if err != nil {
+			return 0, fmt.Errorf("getting inserted ID while adding movie: %w", err)
+		}
+	}
+
+	// Commit the transaction
+	if err = tx.Commit(); err != nil {
+		return fail(err)
+	}
+
+	return m.ID, nil
 }
 
 // GetMovie gets movie data from the movies table (READ)
-func (r *Repo) GetMovie(id int64) (models.Movie, error) {
+func (r *Repo) GetMovie(ctx context.Context, id int64) (models.Movie, error) {
 	query := `SELECT id, title, releaseYear, duration
 	FROM movies
 	WHERE id = ?;`
 
 	var m models.Movie
-	err := r.DB.QueryRow(query, id).Scan(&m.ID, &m.Title, &m.ReleaseYear, &m.Duration) // fill movie struct with data from found row
+	err := r.DB.QueryRowContext(ctx, query, id).Scan(&m.ID, &m.Title, &m.ReleaseYear, &m.Duration) // fill movie struct with data from found row
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return models.Movie{}, ErrNotFound

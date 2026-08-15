@@ -10,6 +10,8 @@ type Movie struct {
 	Title       string
 	ReleaseYear int
 	Duration    int
+	GenreIDs    []int
+	ActorIDs    []int
 }
 
 type Actor struct {

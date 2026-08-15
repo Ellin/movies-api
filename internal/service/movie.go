@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"movies-api/internal/models"
 	"movies-api/internal/repository"
@@ -18,23 +19,43 @@ type MovieSubmission struct {
 	Title       string
 	ReleaseYear int
 	Duration    int
-	Genres      []int
-	Actors      []int
+	GenreIDs    []int
+	ActorIDs    []int
 }
 
 // For movies, your service should allow adding new movies with their title, release year, duration, associated genre, and actors.
-// func (ms *MovieService) AddMovie(sub MovieSubmission) (models.Movie, error) {
+func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (int64, error) {
+	//  Validate release year
 
-// }
+	// Validate duration
+
+	// validate genreIDs
+
+	// Validate ActorIDs
+
+	movieReq := models.Movie{
+		Title:       sub.Title,
+		ReleaseYear: sub.ReleaseYear,
+		Duration:    sub.Duration,
+		GenreIDs:    sub.GenreIDs,
+		ActorIDs:    sub.ActorIDs,
+	}
+
+	// add movie into movies table
+	id, err := ms.repo.AddMovie(ctx, movieReq)
+
+	return id, err
+
+}
 
 // You'll need functions to retrieve all movies, fetch a specific movie by ID, and filter movies by genre or release year.
 
-func (ms *MovieService) GetMovie(id int64) (models.Movie, error) {
+func (ms *MovieService) GetMovie(ctx context.Context, id int64) (models.Movie, error) {
 	if id < 1 {
 		return models.Movie{}, errors.New("id must be positive")
 	}
 
-	movie, err := ms.repo.GetMovie(id)
+	movie, err := ms.repo.GetMovie(ctx, id)
 
 	return movie, err
 }
