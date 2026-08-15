@@ -11,16 +11,26 @@ type MovieService struct {
 	repo *repository.Repo
 }
 
-func NewMovieService(r *repository.Repo) *MovieService {
-	return &MovieService{repo: r}
-}
-
 type MovieSubmission struct {
 	Title       string `json:"title"`
 	ReleaseYear int    `json:"release_year"`
 	Duration    int    `json:"duration"`
 	GenreIDs    []int  `json:"genre_ids"`
 	ActorIDs    []int  `json:"actor_ids"`
+}
+
+// MoviePatch uses pointers so users can do partial updates for movie data
+// Nil pointer values can be used to distinguish data not provided from zero/empty values
+type MoviePatch struct {
+	Title       *string `json:"title"`
+	ReleaseYear *int    `json:"release_year"`
+	Duration    *int    `json:"duration"`
+	GenreIDs    *[]int  `json:"genre_ids"`
+	ActorIDs    *[]int  `json:"actor_ids"`
+}
+
+func NewMovieService(r *repository.Repo) *MovieService {
+	return &MovieService{repo: r}
 }
 
 // For movies, your service should allow adding new movies with their title, release year, duration, associated genre, and actors.
@@ -64,6 +74,64 @@ func (ms *MovieService) GetAllMovies(ctx context.Context) ([]models.MovieDetail,
 	return ms.repo.GetAllMovies(ctx)
 }
 
-// Don't forget to implement a way to get all actors in a specific movie.
+func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePatch) (models.Movie, error) {
+	// First get existing movie
+	movieDetail, err := ms.GetMovie(ctx, id)
+	if err != nil {
+		return models.Movie{}, err
+	}
+
+	movie := stripMovieDetails(movieDetail)
+
+	// Update non-nil values of user input
+	if patch.Title != nil {
+		movie.Title = *patch.Title
+	}
+
+	if patch.ReleaseYear != nil {
+		movie.ReleaseYear = *patch.ReleaseYear
+	}
+
+	if patch.Duration != nil {
+		movie.Duration = *patch.Duration
+	}
+
+	if patch.GenreIDs != nil {
+		movie.GenreIDs = *patch.GenreIDs
+	}
+
+	if patch.ActorIDs != nil {
+		movie.ActorIDs = *patch.ActorIDs
+	}
+
+	// Update database with updated movie
+	movie, err = ms.repo.PatchMovie(ctx, movie)
+	if err != nil {
+		return models.Movie{}, err
+	}
+
+	return movie, nil
+}
+
+// stripMovieDetails converts a MovieDetail object to Movie (removing genre and actor names)
+func stripMovieDetails(md models.MovieDetail) models.Movie {
+	movie := models.Movie{
+		ID:          md.ID,
+		Title:       md.Title,
+		ReleaseYear: md.ReleaseYear,
+		Duration:    md.Duration,
+	}
+
+	// Strip genre and actor details (leaving only genre and actor IDs)
+	for _, genre := range md.Genres {
+		movie.GenreIDs = append(movie.GenreIDs, genre.ID)
+	}
+
+	for _, actor := range md.Actors {
+		movie.ActorIDs = append(movie.ActorIDs, actor.ID)
+	}
+
+	return movie
+}
 
 // Updating a movie's details (including its title, release year, duration, genre, and actors) and removing a movie should also be supported.

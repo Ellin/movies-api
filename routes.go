@@ -9,6 +9,7 @@ func (app *application) routes() *http.ServeMux {
 	mux.HandleFunc("POST /api/movie", app.postMovie)
 	mux.HandleFunc("GET /api/movie", app.getAllMovies)
 	mux.HandleFunc("GET /api/movie/{id}", app.getMovie)
+	mux.HandleFunc("PATCH /api/movie/{id}", app.patchMovie)
 
 	return mux
 }

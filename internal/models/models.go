@@ -14,6 +14,7 @@ type Movie struct {
 	ActorIDs    []int  `json:"actor_ids"`
 }
 
+// MovieDetail contains more detailed genre and actor info for JSON responses
 type MovieDetail struct {
 	ID          int64          `json:"id"`
 	Title       string         `json:"title"`

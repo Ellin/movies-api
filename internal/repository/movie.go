@@ -11,6 +11,7 @@ import (
 
 // AddMovie inserts a new movie into the movies table (CREATE)
 func (r *Repo) AddMovie(ctx context.Context, m models.Movie) (models.Movie, error) {
+	// Create new transaction
 	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return models.Movie{}, fmt.Errorf("beginning transaction for adding movie: %w", err)
@@ -267,33 +268,113 @@ func (r *Repo) buildMovieActorsMap(ctx context.Context) (map[int64][]models.Acto
 	return movieActorsMap, nil
 }
 
-// UpdateMovie updates the movie with matching ID and returns the number of rows affected (UPDATE)
-func (r *Repo) UpdateMovie(m models.Movie) (int64, error) {
+// PatchMovie updates the movies table along with relationships in genres_movies and movies_actors tables with updated movie information
+func (r *Repo) PatchMovie(ctx context.Context, m models.Movie) (models.Movie, error) {
+	// Create new transaction
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return models.Movie{}, fmt.Errorf("beginning transaction for patching movie: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Update movies table
+	if err := r.updateMovie(ctx, tx, m); err != nil {
+		return models.Movie{}, err
+	}
+
+	// Update genres_movies table
+	if err := r.updateMovieGenres(ctx, tx, m); err != nil {
+		return models.Movie{}, err
+	}
+
+	// Update movies_actors table
+	if err := r.updateMovieActors(ctx, tx, m); err != nil {
+		return models.Movie{}, err
+	}
+
+	// Commit the transaction
+	if err = tx.Commit(); err != nil {
+		return models.Movie{}, fmt.Errorf("commiting transaction for patching movie: %w", err)
+	}
+
+	return m, nil
+}
+
+// updateMovie is a helper that updates the movies table with matching ID
+func (r *Repo) updateMovie(ctx context.Context, tx *sql.Tx, m models.Movie) error {
+	// Update movies table
 	query := `UPDATE movies
 	SET title = ?, releaseYear = ?, duration = ?
 	WHERE id = ?;`
 
-	result, err := r.DB.Exec(query, m.Title, m.ReleaseYear, m.Duration, m.ID)
+	result, err := tx.ExecContext(ctx, query, m.Title, m.ReleaseYear, m.Duration, m.ID)
 	if err != nil {
-		return 0, fmt.Errorf("updating movie: %w", err)
+		return fmt.Errorf("updating movie: %w", err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return 0, fmt.Errorf("getting affected rows while updating movie: %w", err)
+		return fmt.Errorf("getting affected rows while updating movie: %w", err)
 	}
 
 	if rows == 0 {
-		return 0, ErrNotFound
+		return ErrNotFound
 	}
 
-	return rows, nil
+	return nil
+}
+
+// updateMovieGenres is a helper that updates the genres_movies table
+func (r *Repo) updateMovieGenres(ctx context.Context, tx *sql.Tx, m models.Movie) error {
+	// Delete all existing relations between the given movie ID and genres in genres_movies table
+	query := `DELETE FROM genres_movies WHERE movie_id = ?;`
+	_, err := tx.ExecContext(ctx, query, m.ID)
+	if err != nil {
+		return err
+	}
+
+	// Add new relationships
+	for _, genreID := range m.GenreIDs {
+		query := `INSERT INTO genres_movies(genre_id, movie_id)
+		VALUES(?, ?)
+		ON CONFLICT(genre_id, movie_id) DO NOTHING;`
+
+		_, err := tx.ExecContext(ctx, query, genreID, m.ID)
+		if err != nil {
+			return fmt.Errorf("linking genre %d to movie: %w", genreID, err)
+		}
+	}
+
+	return nil
+}
+
+// updateMovieActors is a helper that updates the movies_actors table
+func (r *Repo) updateMovieActors(ctx context.Context, tx *sql.Tx, m models.Movie) error {
+	// Delete all existing relations between the given movie ID and actors in movies_actors table
+	query := `DELETE FROM movies_actors WHERE movie_id = ?;`
+	_, err := tx.ExecContext(ctx, query, m.ID)
+	if err != nil {
+		return err
+	}
+
+	// Add new relationships
+	for _, actorID := range m.ActorIDs {
+		query := `INSERT INTO movies_actors(movie_id, actor_id) VALUES(?, ?)
+		ON CONFLICT(movie_id, actor_id) DO NOTHING;`
+
+		_, err := tx.ExecContext(ctx, query, m.ID, actorID)
+		if err != nil {
+			return fmt.Errorf("linking actor %d to movie: %w", actorID, err)
+		}
+	}
+
+	return nil
 }
 
 // DeleteMovie deletes the movie with match ID and returns the number of rows affected (DELETE)
 func (r *Repo) DeleteMovie(id int64) (int64, error) {
 	query := `DELETE FROM movies
-	where id = ?;`
+	WHERE id = ?;`
 
 	result, err := r.DB.Exec(query, id)
 	if err != nil {
