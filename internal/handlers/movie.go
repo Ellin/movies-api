@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-func (app *application) postMovie(w http.ResponseWriter, r *http.Request) {
+func (app *App) PostMovie(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	sub := service.MovieSubmission{}
@@ -21,7 +21,7 @@ func (app *application) postMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	movie, err := app.movieService.AddMovie(ctx, sub)
+	movie, err := app.MovieService.AddMovie(ctx, sub)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			log.Println("client disconnected before add movie finished")
@@ -38,10 +38,10 @@ func (app *application) postMovie(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(movie)
 }
 
-func (app *application) getAllMovies(w http.ResponseWriter, r *http.Request) {
+func (app *App) GetAllMovies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	movies, err := app.movieService.GetAllMovies(ctx)
+	movies, err := app.MovieService.GetAllMovies(ctx)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			log.Println("client disconnected before get movie finished")
@@ -56,7 +56,7 @@ func (app *application) getAllMovies(w http.ResponseWriter, r *http.Request) {
 }
 
 // get by ID
-func (app *application) getMovie(w http.ResponseWriter, r *http.Request) {
+func (app *App) GetMovie(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64) // int64 equivalent of Atoi
@@ -65,7 +65,7 @@ func (app *application) getMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	movie, err := app.movieService.GetMovie(ctx, id)
+	movie, err := app.MovieService.GetMovie(ctx, id)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			log.Println("client disconnected before get movie finished")
@@ -82,7 +82,7 @@ func (app *application) getMovie(w http.ResponseWriter, r *http.Request) {
 }
 
 // update by ID
-func (app *application) patchMovie(w http.ResponseWriter, r *http.Request) {
+func (app *App) PatchMovie(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64) // int64 equivalent of Atoi
@@ -98,7 +98,7 @@ func (app *application) patchMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	movie, err := app.movieService.PatchMovie(ctx, id, patch)
+	movie, err := app.MovieService.PatchMovie(ctx, id, patch)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			log.Println("client disconnected before add movie finished")
@@ -116,6 +116,6 @@ func (app *application) patchMovie(w http.ResponseWriter, r *http.Request) {
 }
 
 // delete by ID
-func (app *application) deleteMovie(w http.ResponseWriter, r *http.Request) {
+func (app *App) DeleteMovie(w http.ResponseWriter, r *http.Request) {
 
 }

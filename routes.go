@@ -1,15 +1,18 @@
 package main
 
-import "net/http"
+import (
+	"movies-api/internal/handlers"
+	"net/http"
+)
 
-func (app *application) routes() *http.ServeMux {
+func NewRouter(app *handlers.App) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// movie routes
-	mux.HandleFunc("POST /api/movie", app.postMovie)
-	mux.HandleFunc("GET /api/movie", app.getAllMovies)
-	mux.HandleFunc("GET /api/movie/{id}", app.getMovie)
-	mux.HandleFunc("PATCH /api/movie/{id}", app.patchMovie)
+	mux.HandleFunc("POST /api/movie", app.PostMovie)
+	mux.HandleFunc("GET /api/movie", app.GetAllMovies)
+	mux.HandleFunc("GET /api/movie/{id}", app.GetMovie)
+	mux.HandleFunc("PATCH /api/movie/{id}", app.PatchMovie)
 
 	return mux
 }
