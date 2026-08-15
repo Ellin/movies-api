@@ -79,6 +79,18 @@ func (r *Repo) GetMovie(ctx context.Context, id int64) (models.Movie, error) {
 }
 
 func (r *Repo) GetAllMovies(ctx context.Context) ([]models.MovieDetail, error) {
+	// make movie-genres map with movie id as key
+	movieGenresMap, err := r.buildMovieGenresMap(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// make movie-actors map with movie id as key
+	movieActorsMap, err := r.buildMovieActorsMap(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// get all movies from movies table
 	query := `SELECT id, title, releaseYear, duration FROM movies ORDER BY id ASC;`
 	rows, err := r.DB.QueryContext(ctx, query)
@@ -86,66 +98,6 @@ func (r *Repo) GetAllMovies(ctx context.Context) ([]models.MovieDetail, error) {
 		return nil, fmt.Errorf("error getting all movies: %w", err)
 	}
 	defer rows.Close()
-
-	// ---- GENRE-MOVIES
-
-	// join genres_movies data with genre names
-	query = `SELECT movie_id, genre_id, g.name AS genre_name
-	FROM genres_movies gm JOIN genres g ON g.id = gm.genre_id
-	ORDER BY movie_id ASC;`
-	mgrows, err := r.DB.QueryContext(ctx, query)
-	if err != nil {
-		return nil, fmt.Errorf("error getting movie_genre rows: %w", err)
-	}
-	defer mgrows.Close()
-
-	// make movie-genres map with movie id as key
-	movieGenresMap := make(map[int64][]models.Genre)
-	for mgrows.Next() {
-		var movieID int64
-		var genre models.Genre
-
-		err = mgrows.Scan(&movieID, &genre.ID, &genre.Name)
-		if err != nil {
-			return nil, fmt.Errorf("scanning movie genre row while getting all movies: %w", err)
-		}
-
-		movieGenresMap[movieID] = append(movieGenresMap[movieID], genre)
-	}
-
-	// Check if mgrows.Next() loop stopped due to error
-	if err := mgrows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating movie genre rows while getting all movies: %w", err)
-	}
-
-	// ---- MOVIES-ACTORS
-	// join movies_actors with actors
-	query = `SELECT movie_id, actor_id, a.name AS actor_name
-	FROM movies_actors ma JOIN actors a on a.id = ma.actor_id
-	ORDER BY movie_id ASC;`
-	marows, err := r.DB.QueryContext(ctx, query)
-	if err != nil {
-		return nil, fmt.Errorf("error getting movie-actors rows: %w", err)
-	}
-	defer marows.Close()
-
-	// make movie-actors map with movie id as key
-	movieActorsMap := make(map[int64][]models.ActorSummary)
-	for marows.Next() {
-		var movieID int64
-		var actor models.ActorSummary
-
-		err = marows.Scan(&movieID, &actor.ID, &actor.Name)
-		if err != nil {
-			return nil, fmt.Errorf("scanning movie actor row while getting all movies: %w", err)
-		}
-
-		movieActorsMap[movieID] = append(movieActorsMap[movieID], actor)
-	}
-	// Check if magrows.Next() loop stopped due to error
-	if err := marows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating movie actor rows while getting all movies: %w", err)
-	}
 
 	var allMovies []models.MovieDetail
 
@@ -157,10 +109,7 @@ func (r *Repo) GetAllMovies(ctx context.Context) ([]models.MovieDetail, error) {
 			return nil, fmt.Errorf("scanning movie row while getting all movies: %w", err)
 		}
 
-		// add genres info
 		m.Genres = movieGenresMap[m.ID]
-
-		// add actors info
 		m.Actors = movieActorsMap[m.ID]
 
 		allMovies = append(allMovies, m)
@@ -172,6 +121,74 @@ func (r *Repo) GetAllMovies(ctx context.Context) ([]models.MovieDetail, error) {
 	}
 
 	return allMovies, nil
+}
+
+// buildMovieGenresMap is a helper that creates a map where the key is the movie ID and value is all associated genres
+func (r *Repo) buildMovieGenresMap(ctx context.Context) (map[int64][]models.Genre, error) {
+	// join genres_movies data with genre names
+	query := `SELECT movie_id, genre_id, g.name AS genre_name
+	FROM genres_movies gm JOIN genres g ON g.id = gm.genre_id
+	ORDER BY movie_id ASC;`
+
+	rows, err := r.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("error getting movie_genre rows: %w", err)
+	}
+	defer rows.Close()
+
+	// make movie-genres map with movie id as key
+	movieGenresMap := make(map[int64][]models.Genre)
+	for rows.Next() {
+		var movieID int64
+		var genre models.Genre
+
+		err = rows.Scan(&movieID, &genre.ID, &genre.Name)
+		if err != nil {
+			return nil, fmt.Errorf("scanning movie genre row while getting all movies: %w", err)
+		}
+
+		movieGenresMap[movieID] = append(movieGenresMap[movieID], genre)
+	}
+
+	// Check if rows.Next() loop stopped due to error
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating movie genre rows while getting all movies: %w", err)
+	}
+
+	return movieGenresMap, nil
+}
+
+// buildMovieActorsMap is a helper that creates a map where the key is the movie ID and value is all associated actors
+func (r *Repo) buildMovieActorsMap(ctx context.Context) (map[int64][]models.ActorSummary, error) {
+	// join movies_actors with actors
+	query := `SELECT movie_id, actor_id, a.name AS actor_name
+	FROM movies_actors ma JOIN actors a on a.id = ma.actor_id
+	ORDER BY movie_id ASC;`
+	rows, err := r.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("error getting movie-actors rows: %w", err)
+	}
+	defer rows.Close()
+
+	// make movie-actors map with movie id as key
+	movieActorsMap := make(map[int64][]models.ActorSummary)
+	for rows.Next() {
+		var movieID int64
+		var actor models.ActorSummary
+
+		err = rows.Scan(&movieID, &actor.ID, &actor.Name)
+		if err != nil {
+			return nil, fmt.Errorf("scanning movie actor row while getting all movies: %w", err)
+		}
+
+		movieActorsMap[movieID] = append(movieActorsMap[movieID], actor)
+	}
+	// Check if rows.Next() loop stopped due to error
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating movie actor rows while getting all movies: %w", err)
+	}
+
+	return movieActorsMap, nil
 }
 
 // UpdateMovie updates the movie with matching ID and returns the number of rows affected (UPDATE)
