@@ -57,25 +57,101 @@ func (r *Repo) AddMovie(ctx context.Context, m models.Movie) (models.Movie, erro
 }
 
 // GetMovie gets movie data from the movies table (READ)
-func (r *Repo) GetMovie(ctx context.Context, id int64) (models.Movie, error) {
+func (r *Repo) GetMovie(ctx context.Context, id int64) (models.MovieDetail, error) {
+	// Get data from movies table
 	query := `SELECT id, title, releaseYear, duration
-	FROM movies
-	WHERE id = ?;`
+	FROM movies WHERE id = ?;`
 
-	var m models.Movie
-	err := r.DB.QueryRowContext(ctx, query, id).Scan(&m.ID, &m.Title, &m.ReleaseYear, &m.Duration) // fill movie struct with data from found row
+	rows, err := r.DB.QueryContext(ctx, query, id)
+	if err != nil {
+		return models.MovieDetail{}, err
+	}
+	defer rows.Close()
 
-	// ! TO DO: ALSO GET GENRE AND ACTORS INFO
-
+	var m models.MovieDetail
+	err = r.DB.QueryRowContext(ctx, query, id).Scan(&m.ID, &m.Title, &m.ReleaseYear, &m.Duration) // fill movie struct with data from found row
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return models.Movie{}, ErrNotFound
+			return models.MovieDetail{}, ErrNotFound
 		} else {
-			return models.Movie{}, fmt.Errorf("getting movie: %w", err)
+			return models.MovieDetail{}, fmt.Errorf("getting movie: %w", err)
 		}
 	}
 
+	m.Genres, err = r.getGenresByMovie(ctx, id)
+	if err != nil {
+		return models.MovieDetail{}, err
+	}
+
+	m.Actors, err = r.getActorsByMovie(ctx, id)
+	if err != nil {
+		return models.MovieDetail{}, err
+	}
+
 	return m, nil
+}
+
+// getGenresByMovie is a helper that retrieves all genres (with id and name) associated with a given movie ID
+func (r *Repo) getGenresByMovie(ctx context.Context, movieID int64) ([]models.Genre, error) {
+	// Get genre data associated with the given movie ID
+	query := `SELECT gm.genre_id, g.name
+	FROM genres_movies gm JOIN genres g ON gm.genre_id = g.id
+	WHERE gm.movie_id = ?;`
+
+	rows, err := r.DB.QueryContext(ctx, query, movieID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var genres []models.Genre
+	for rows.Next() {
+		var g models.Genre
+		err = rows.Scan(&g.ID, &g.Name)
+		if err != nil {
+			return nil, fmt.Errorf("scanning rows: %w", err)
+		}
+
+		genres = append(genres, g)
+	}
+
+	// Check if rows.Next() loop stopped due to error
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating rows: %w", err)
+	}
+
+	return genres, nil
+}
+
+// getActorsByMovie is a helper that retrieves all actors (with id and name) associated with a given movie ID
+func (r *Repo) getActorsByMovie(ctx context.Context, movieID int64) ([]models.ActorSummary, error) {
+	// Get actor data associated with the given movie ID
+	query := `SELECT ma.actor_id, a.name
+	FROM movies_actors ma JOIN actors a ON ma.actor_id = a.id
+	WHERE ma.movie_id = ?;`
+
+	rows, err := r.DB.QueryContext(ctx, query, movieID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var actors []models.ActorSummary
+	for rows.Next() {
+		var actor models.ActorSummary
+		err = rows.Scan(&actor.ID, &actor.Name)
+		if err != nil {
+			return nil, fmt.Errorf("scanning rows: %w", err)
+		}
+		actors = append(actors, actor)
+	}
+
+	// Check if rows.Next() loop stopped due to error
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating rows: %w", err)
+	}
+
+	return actors, nil
 }
 
 func (r *Repo) GetAllMovies(ctx context.Context) ([]models.MovieDetail, error) {

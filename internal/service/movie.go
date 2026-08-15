@@ -50,9 +50,9 @@ func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (mode
 
 // You'll need functions to retrieve all movies, fetch a specific movie by ID, and filter movies by genre or release year.
 
-func (ms *MovieService) GetMovie(ctx context.Context, id int64) (models.Movie, error) {
+func (ms *MovieService) GetMovie(ctx context.Context, id int64) (models.MovieDetail, error) {
 	if id < 1 {
-		return models.Movie{}, errors.New("id must be positive")
+		return models.MovieDetail{}, errors.New("id must be positive")
 	}
 
 	movie, err := ms.repo.GetMovie(ctx, id)
