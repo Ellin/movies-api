@@ -371,24 +371,75 @@ func (r *Repo) updateMovieActors(ctx context.Context, tx *sql.Tx, m models.Movie
 	return nil
 }
 
-// DeleteMovie deletes the movie with match ID and returns the number of rows affected (DELETE)
-func (r *Repo) DeleteMovie(id int64) (int64, error) {
-	query := `DELETE FROM movies
-	WHERE id = ?;`
-
-	result, err := r.DB.Exec(query, id)
+// DeleteMovie deletes the movie by ID (DELETE)
+func (r *Repo) DeleteMovie(ctx context.Context, id int64) error {
+	// Create new transaction
+	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, fmt.Errorf("deleting movie: %w", err)
+		return err
+	}
+	defer tx.Rollback()
+
+	// Delete movie relationships first
+	if err := r.deleteMovieGenres(ctx, tx, id); err != nil {
+		return err
+	}
+
+	if err := r.deleteMovieActors(ctx, tx, id); err != nil {
+		return err
+	}
+
+	// Delete movie
+	if err := r.deleteFromMovies(ctx, tx, id); err != nil {
+		return err
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commiting transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (r *Repo) deleteFromMovies(ctx context.Context, tx *sql.Tx, movieID int64) error {
+	query := `DELETE FROM movies WHERE id = ?;`
+
+	result, err := tx.ExecContext(ctx, query, movieID)
+	if err != nil {
+		return fmt.Errorf("deleting movie: %w", err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return 0, fmt.Errorf("getting affected rows while deleting movie: %w", err)
+		return fmt.Errorf("getting affected rows while deleting movie: %w", err)
 	}
 
 	if rows == 0 {
-		return 0, ErrNotFound
+		return ErrNotFound
 	}
 
-	return rows, nil
+	return nil
+}
+
+func (r *Repo) deleteMovieGenres(ctx context.Context, tx *sql.Tx, movieID int64) error {
+	query := `DELETE FROM genres_movies WHERE movie_id = ?;`
+
+	_, err := tx.ExecContext(ctx, query, movieID)
+	if err != nil {
+		return fmt.Errorf("deleting from genres_movies: %w", err)
+	}
+
+	return nil
+}
+
+func (r *Repo) deleteMovieActors(ctx context.Context, tx *sql.Tx, movieID int64) error {
+	query := `DELETE FROM movies_actors WHERE movie_id = ?;`
+
+	_, err := tx.ExecContext(ctx, query, movieID)
+	if err != nil {
+		return fmt.Errorf("deleting from movies_actors: %w", err)
+	}
+
+	return nil
 }

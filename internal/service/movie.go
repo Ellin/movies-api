@@ -134,4 +134,6 @@ func stripMovieDetails(md models.MovieDetail) models.Movie {
 	return movie
 }
 
-// Updating a movie's details (including its title, release year, duration, genre, and actors) and removing a movie should also be supported.
+func (ms *MovieService) DeleteMovie(ctx context.Context, id int64) error {
+	return ms.repo.DeleteMovie(ctx, id)
+}
