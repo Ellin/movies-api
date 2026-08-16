@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"movies-api/internal/models"
 	"movies-api/internal/repository"
 )
@@ -135,5 +136,7 @@ func stripMovieDetails(md models.MovieDetail) models.Movie {
 }
 
 func (ms *MovieService) DeleteMovie(ctx context.Context, id int64) error {
-	return ms.repo.DeleteMovie(ctx, id)
+	err := ms.repo.DeleteMovie(ctx, id)
+	fmt.Println(err)
+	return err
 }

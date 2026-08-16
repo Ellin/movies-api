@@ -373,39 +373,9 @@ func (r *Repo) updateMovieActors(ctx context.Context, tx *sql.Tx, m models.Movie
 
 // DeleteMovie deletes the movie by ID (DELETE)
 func (r *Repo) DeleteMovie(ctx context.Context, id int64) error {
-	// Create new transaction
-	tx, err := r.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	// Delete movie relationships first
-	if err := r.deleteMovieGenres(ctx, tx, id); err != nil {
-		return err
-	}
-
-	if err := r.deleteMovieActors(ctx, tx, id); err != nil {
-		return err
-	}
-
-	// Delete movie
-	if err := r.deleteFromMovies(ctx, tx, id); err != nil {
-		return err
-	}
-
-	// Commit transaction
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commiting transaction: %w", err)
-	}
-
-	return nil
-}
-
-func (r *Repo) deleteFromMovies(ctx context.Context, tx *sql.Tx, movieID int64) error {
 	query := `DELETE FROM movies WHERE id = ?;`
 
-	result, err := tx.ExecContext(ctx, query, movieID)
+	result, err := r.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("deleting movie: %w", err)
 	}
@@ -417,28 +387,6 @@ func (r *Repo) deleteFromMovies(ctx context.Context, tx *sql.Tx, movieID int64) 
 
 	if rows == 0 {
 		return ErrNotFound
-	}
-
-	return nil
-}
-
-func (r *Repo) deleteMovieGenres(ctx context.Context, tx *sql.Tx, movieID int64) error {
-	query := `DELETE FROM genres_movies WHERE movie_id = ?;`
-
-	_, err := tx.ExecContext(ctx, query, movieID)
-	if err != nil {
-		return fmt.Errorf("deleting from genres_movies: %w", err)
-	}
-
-	return nil
-}
-
-func (r *Repo) deleteMovieActors(ctx context.Context, tx *sql.Tx, movieID int64) error {
-	query := `DELETE FROM movies_actors WHERE movie_id = ?;`
-
-	_, err := tx.ExecContext(ctx, query, movieID)
-	if err != nil {
-		return fmt.Errorf("deleting from movies_actors: %w", err)
 	}
 
 	return nil
