@@ -13,21 +13,21 @@ type MovieService struct {
 }
 
 type MovieSubmission struct {
-	Title       string `json:"title"`
-	ReleaseYear int    `json:"release_year"`
-	Duration    int    `json:"duration"`
-	GenreIDs    []int  `json:"genre_ids"`
-	ActorIDs    []int  `json:"actor_ids"`
+	Title       string  `json:"title"`
+	ReleaseYear int     `json:"release_year"`
+	Duration    int     `json:"duration"`
+	GenreIDs    []int64 `json:"genre_ids"`
+	ActorIDs    []int64 `json:"actor_ids"`
 }
 
 // MoviePatch uses pointers so users can do partial updates for movie data
 // Nil pointer values can be used to distinguish data not provided from zero/empty values
 type MoviePatch struct {
-	Title       *string `json:"title"`
-	ReleaseYear *int    `json:"release_year"`
-	Duration    *int    `json:"duration"`
-	GenreIDs    *[]int  `json:"genre_ids"`
-	ActorIDs    *[]int  `json:"actor_ids"`
+	Title       *string  `json:"title"`
+	ReleaseYear *int     `json:"release_year"`
+	Duration    *int     `json:"duration"`
+	GenreIDs    *[]int64 `json:"genre_ids"`
+	ActorIDs    *[]int64 `json:"actor_ids"`
 }
 
 func NewMovieService(r *repository.Repo) *MovieService {
