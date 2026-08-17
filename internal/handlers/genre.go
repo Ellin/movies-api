@@ -80,3 +80,36 @@ func (app *App) GetGenre(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(genres)
 }
+
+func (app *App) PatchGenre(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id < 1 {
+		http.NotFound(w, r)
+		return
+	}
+
+	patch := service.GenrePatch{}
+
+	if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	genre, err := app.GenreService.PatchGenre(ctx, id, patch)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			log.Println("client disconnected before add movie finished")
+		} else {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+
+			// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(genre)
+}

@@ -72,5 +72,24 @@ func (r *Repo) GetAllGenres(ctx context.Context) ([]*models.Genre, error) {
 }
 
 // UPDATE
+func (r *Repo) PatchGenre(ctx context.Context, g models.Genre) (models.Genre, error) {
+	query := `UPDATE movies
+	SET name = ?
+	WHERE id = ?;`
+	result, err := r.DB.ExecContext(ctx, query, g.Name, g.ID)
+	if err != nil {
+		return models.Genre{}, fmt.Errorf("updating genre: %w", err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return models.Genre{}, fmt.Errorf("getting affected rows while updating genre: %w", err)
+	}
+
+	if rows == 0 {
+		return models.Genre{}, ErrNotFound
+	}
+
+	return g, nil
+}
 
 //DELETE

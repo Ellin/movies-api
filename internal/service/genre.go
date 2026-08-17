@@ -17,6 +17,10 @@ type GenreSubmission struct {
 	Name string `json: name`
 }
 
+type GenrePatch struct {
+	Name *string `json: name`
+}
+
 // initialize genre service
 func GenreNewService(r *repository.Repo) *GenreService {
 	return &GenreService{repo: r}
@@ -35,13 +39,27 @@ func (gs *GenreService) AddGenre(ctx context.Context, sub GenreSubmission) (mode
 	return g, err
 }
 
-func (gs *GenreService) GetAllGenres(ctx context.Context) ([]*models.Genre, error) {
+func (gs *GenreService) GetAllGenres(ctx context.Context) ([]models.Genre, error) {
 	return gs.repo.GetAllGenres(ctx)
 }
 
-func (gs *GenreService) GetGenre(ctx context.Context, id int64) (*models.Genre, error) {
+func (gs *GenreService) GetGenre(ctx context.Context, id int64) (models.Genre, error) {
 	if id < 1 {
-		return &models.Genre{}, errors.New("id must be positive")
+		return models.Genre{}, errors.New("id must be positive")
 	}
 	return gs.repo.GetGenre(ctx, id)
+}
+
+func (gs *GenreService) PatchGenre(ctx context.Context, id int64, patch GenrePatch) (models.Genre, error) {
+	g := models.Genre{ID: id}
+	if patch.Name != nil {
+		g.Name = *patch.Name
+	}
+
+	g, err := gs.repo.PatchGenre(ctx, g)
+	if err != nil {
+		return models.Genre{}, err
+	}
+
+	return g, nil
 }
