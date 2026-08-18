@@ -28,18 +28,18 @@ func (r *Repo) CreateGenre(ctx context.Context, gnr models.Genre) (models.Genre,
 }
 
 // READ
-func (r *Repo) GetGenre(ctx context.Context, id int64) (*models.Genre, error) {
+func (r *Repo) GetGenre(ctx context.Context, id int64) (models.Genre, error) {
 	query := "SELECT * FROM genres WHERE id = ?"
 
 	row := r.DB.QueryRowContext(ctx, query, id)
-	genre := &models.Genre{}
+	genre := models.Genre{}
 
 	err := row.Scan(&genre.ID, &genre.Name)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotFound
+			return models.Genre{}, ErrNotFound
 		}
-		return nil, fmt.Errorf("scanning the data from genre row to struct: %w", err)
+		return models.Genre{}, fmt.Errorf("scanning the data from genre row to struct: %w", err)
 	}
 
 	return genre, nil
@@ -47,8 +47,8 @@ func (r *Repo) GetGenre(ctx context.Context, id int64) (*models.Genre, error) {
 }
 
 // READ 1.2
-func (r *Repo) GetAllGenres(ctx context.Context) ([]*models.Genre, error) {
-	query := "SELECT * FROM genres ORDER BY name"
+func (r *Repo) GetAllGenres(ctx context.Context) ([]models.Genre, error) {
+	query := "SELECT id, name FROM genres ORDER BY name"
 	rows, err := r.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("getting genres from genre table: %w", err)
@@ -56,16 +56,20 @@ func (r *Repo) GetAllGenres(ctx context.Context) ([]*models.Genre, error) {
 
 	defer rows.Close()
 
-	var genres []*models.Genre
+	var genres []models.Genre
 
 	for rows.Next() {
-		genre := &models.Genre{}
+		genre := models.Genre{}
 
 		err = rows.Scan(&genre.ID, &genre.Name)
 		if err != nil {
 			return nil, err
 		}
 		genres = append(genres, genre)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating genre rows while getting all genres: %w", err)
 	}
 
 	return genres, nil
