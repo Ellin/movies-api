@@ -97,3 +97,22 @@ func (r *Repo) PatchGenre(ctx context.Context, g models.Genre) (models.Genre, er
 }
 
 //DELETE
+
+func (r *Repo) DeleteGenre(ctx context.Context, id int64) error {
+	query := `DELETE FROM genres WHERE id = ?;`
+
+	res, err := r.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("deleting genre: %w", err)
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("getting affected rows while deleting genre: %w", err)
+	}
+
+	if rows == 0 {
+		return ErrNotFound
+	}
+	return nil
+}

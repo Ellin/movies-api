@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"movies-api/internal/models"
 	"movies-api/internal/repository"
 )
@@ -62,4 +63,10 @@ func (gs *GenreService) PatchGenre(ctx context.Context, id int64, patch GenrePat
 	}
 
 	return g, nil
+}
+
+func (gs *MovieService) DeleteGenre(ctx context.Context, id int64) error {
+	err := gs.repo.DeleteGenre(ctx, id)
+	fmt.Println(err)
+	return err
 }
