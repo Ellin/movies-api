@@ -48,7 +48,7 @@ func createTableActors(db *sql.DB) (sql.Result, error) {
 	sql := `CREATE TABLE IF NOT EXISTS actors (
 		id INTEGER PRIMARY KEY,
 		name TEXT NOT NULL,
-		birthDate TEXT NOT NULL
+		birth_date TEXT NOT NULL
 	);`
 
 	return db.Exec(sql)

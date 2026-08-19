@@ -10,4 +10,5 @@ type App struct {
 	Repo         *repository.Repo // to be deleted once all services are set
 	MovieService *service.MovieService
 	GenreService *service.GenreService
+	ActorService *service.ActorService
 }
