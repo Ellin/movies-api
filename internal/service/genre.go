@@ -23,7 +23,7 @@ type GenrePatch struct {
 }
 
 // initialize genre service
-func GenreNewService(r *repository.Repo) *GenreService {
+func NewGenreService(r *repository.Repo) *GenreService {
 	return &GenreService{repo: r}
 }
 
