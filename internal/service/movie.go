@@ -17,21 +17,21 @@ type MovieService struct {
 }
 
 type MovieSubmission struct {
-	Title       string `json:"title" validate:"required"`
-	ReleaseYear int    `json:"release_year" validate:"required"`
-	Duration    int    `json:"duration" validate:"required,gte=1,lte=100000"`
-	GenreIDs    []int  `json:"genre_ids" validate:"dive,gte=1"`
-	ActorIDs    []int  `json:"actor_ids" validate:"dive,gte=1"`
+	Title       string  `json:"title" validate:"required"`
+	ReleaseYear int     `json:"release_year" validate:"required"`
+	Duration    int     `json:"duration" validate:"required,gte=1,lte=100000"`
+	GenreIDs    []int64 `json:"genre_ids" validate:"dive,gte=1"`
+	ActorIDs    []int64 `json:"actor_ids" validate:"dive,gte=1"`
 }
 
 // MoviePatch uses pointers so users can do partial updates for movie data
 // Nil pointer values can be used to distinguish data not provided from zero/empty values
 type MoviePatch struct {
-	Title       *string `json:"title"`
-	ReleaseYear *int    `json:"release_year"`
-	Duration    *int    `json:"duration" validate:"omitempty,gte=1,lte=100000"`
-	GenreIDs    *[]int  `json:"genre_ids" validate:"omitempty,dive,gte=1"`
-	ActorIDs    *[]int  `json:"actor_ids" validate:"omitempty,dive,gte=1"`
+	Title       *string  `json:"title"`
+	ReleaseYear *int     `json:"release_year"`
+	Duration    *int     `json:"duration" validate:"omitempty,gte=1,lte=100000"`
+	GenreIDs    *[]int64 `json:"genre_ids" validate:"omitempty,dive,gte=1"`
+	ActorIDs    *[]int64 `json:"actor_ids" validate:"omitempty,dive,gte=1"`
 }
 
 func NewMovieService(r *repository.Repo, v *validator.Validate) *MovieService {

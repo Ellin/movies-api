@@ -36,6 +36,7 @@ func main() {
 	app := handlers.App{
 		Repo:         repo, // to be deleted once all services are set
 		MovieService: service.NewMovieService(repo, validate),
+		GenreService: service.NewGenreService(repo),
 	}
 
 	// genr := models.Genre{ID: 1, Name: "Drama"}
