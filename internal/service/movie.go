@@ -6,16 +6,20 @@ import (
 	"fmt"
 	"movies-api/internal/models"
 	"movies-api/internal/repository"
+	"time"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type MovieService struct {
-	repo *repository.Repo
+	repo     *repository.Repo
+	validate *validator.Validate
 }
 
 type MovieSubmission struct {
-	Title       string `json:"title"`
-	ReleaseYear int    `json:"release_year"`
-	Duration    int    `json:"duration"`
+	Title       string `json:"title" validate:"required"`
+	ReleaseYear int    `json:"release_year" validate:"required"`
+	Duration    int    `json:"duration" validate:"required"`
 	GenreIDs    []int  `json:"genre_ids"`
 	ActorIDs    []int  `json:"actor_ids"`
 }
@@ -30,19 +34,25 @@ type MoviePatch struct {
 	ActorIDs    *[]int  `json:"actor_ids"`
 }
 
-func NewMovieService(r *repository.Repo) *MovieService {
-	return &MovieService{repo: r}
+func NewMovieService(r *repository.Repo, v *validator.Validate) *MovieService {
+	return &MovieService{repo: r, validate: v}
 }
 
 // For movies, your service should allow adding new movies with their title, release year, duration, associated genre, and actors.
 func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (models.Movie, error) {
 	//  Validate release year
-
+	if err := validateReleaseYear(sub.ReleaseYear); err != nil {
+		return models.Movie{}, err
+	}
 	// Validate duration
 
 	// validate genreIDs
 
 	// Validate ActorIDs
+	if err := ms.validate.Struct(sub); err != nil {
+		fmt.Println("Validation fail")
+		return models.Movie{}, err
+	}
 
 	newMovie := models.Movie{
 		Title:       sub.Title,
@@ -90,6 +100,10 @@ func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePat
 	}
 
 	if patch.ReleaseYear != nil {
+		//  Validate release year
+		if err := validateReleaseYear(*patch.ReleaseYear); err != nil {
+			return models.Movie{}, err
+		}
 		movie.ReleaseYear = *patch.ReleaseYear
 	}
 
@@ -139,4 +153,19 @@ func (ms *MovieService) DeleteMovie(ctx context.Context, id int64) error {
 	err := ms.repo.DeleteMovie(ctx, id)
 	fmt.Println(err)
 	return err
+}
+
+// validateReleaseYear checks that the movie's release year is between 1888 and the current year
+func validateReleaseYear(year int) error {
+	earliestMovie := 1888
+	currentYear := time.Now().Year()
+
+	if year < earliestMovie {
+		return fmt.Errorf("release year cannot be earlier than %v", earliestMovie)
+	}
+	if year > currentYear {
+		return fmt.Errorf("release year cannot be in the future")
+	}
+
+	return nil
 }
