@@ -123,7 +123,7 @@ func (app *App) DeleteGenre(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := app.MovieService.DeleteMovie(ctx, id); err != nil {
+	if err := app.MovieService.DeleteGenre(ctx, id); err != nil {
 		if errors.Is(err, context.Canceled) {
 			log.Println("client disconnected before get movie finished")
 		} else if errors.Is(err, repository.ErrNotFound) {

@@ -77,7 +77,7 @@ func (r *Repo) GetAllGenres(ctx context.Context) ([]models.Genre, error) {
 
 // UPDATE
 func (r *Repo) PatchGenre(ctx context.Context, g models.Genre) (models.Genre, error) {
-	query := `UPDATE movies
+	query := `UPDATE genres
 	SET name = ?
 	WHERE id = ?;`
 	result, err := r.DB.ExecContext(ctx, query, g.Name, g.ID)
