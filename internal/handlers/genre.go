@@ -113,3 +113,26 @@ func (app *App) PatchGenre(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(genre)
 }
+
+func (app *App) DeleteGenre(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id < 1 {
+		http.NotFound(w, r)
+		return
+	}
+
+	if err := app.MovieService.DeleteMovie(ctx, id); err != nil {
+		if errors.Is(err, context.Canceled) {
+			log.Println("client disconnected before get movie finished")
+		} else if errors.Is(err, repository.ErrNotFound) {
+			http.NotFound(w, r)
+		} else {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
