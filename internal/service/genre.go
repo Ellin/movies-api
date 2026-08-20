@@ -15,11 +15,12 @@ type GenreService struct {
 
 // package prepared for submission
 type GenreSubmission struct {
-	Name string `json: name`
+	Name     string  `json:"name"`
+	MovieIDs []int64 `json:"movie_ids"`
 }
 
 type GenrePatch struct {
-	Name *string `json: name`
+	Name *string `json:"name"`
 }
 
 // initialize genre service
@@ -35,7 +36,7 @@ func (gs *GenreService) AddGenre(ctx context.Context, sub GenreSubmission) (mode
 	}
 
 	//call repo lvl
-	g, err := gs.repo.CreateGenre(ctx, NewGenre)
+	g, err := gs.repo.AddGenre(ctx, NewGenre)
 
 	return g, err
 }

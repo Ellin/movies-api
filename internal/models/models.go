@@ -1,8 +1,9 @@
 package models
 
 type Genre struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
+	ID       int64   `json:"id"`
+	Name     string  `json:"name"`
+	MovieIDs []int64 `json:"movie_ids"`
 }
 
 type Movie struct {
