@@ -41,6 +41,31 @@ func (app *App) PostMovie(w http.ResponseWriter, r *http.Request) {
 func (app *App) GetAllMovies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	query := r.URL.Query()
+
+	// Check filters from query
+	if queryYear := query.Get("year"); queryYear != "" {
+		year, err := strconv.Atoi(queryYear)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		}
+
+		movies, err := app.MovieService.GetMoviesByYear(ctx, year)
+		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				log.Println("client disconnected before get movie finished")
+			} else {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(movies)
+		return
+	}
+
+	// Get all movies (no filters)
 	movies, err := app.MovieService.GetAllMovies(ctx)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {

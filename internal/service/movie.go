@@ -158,6 +158,19 @@ func (ms *MovieService) DeleteMovie(ctx context.Context, id int64) error {
 	return err
 }
 
+func (ms *MovieService) GetMoviesByYear(ctx context.Context, year int) ([]models.MovieDetail, error) {
+	if err := validateReleaseYear(year); err != nil {
+		return nil, err
+	}
+
+	movies, err := ms.repo.GetMoviesByYear(ctx, year)
+	if err != nil {
+		return nil, err
+	}
+
+	return movies, nil
+}
+
 // validateReleaseYear checks that the movie's release year is between 1888 and the current year
 func validateReleaseYear(year int) error {
 	earliestMovie := 1888
