@@ -9,6 +9,7 @@ import (
 	"movies-api/internal/service"
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -31,9 +32,10 @@ func main() {
 
 	// Initialize the application's dependencies
 	repo := &repository.Repo{DB: db}
+	validate := validator.New()
 	app := handlers.App{
 		Repo:         repo, // to be deleted once all services are set
-		MovieService: service.NewMovieService(repo),
+		MovieService: service.NewMovieService(repo, validate),
 		GenreService: service.NewGenreService(repo),
 	}
 

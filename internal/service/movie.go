@@ -6,18 +6,22 @@ import (
 	"fmt"
 	"movies-api/internal/models"
 	"movies-api/internal/repository"
+	"time"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type MovieService struct {
-	repo *repository.Repo
+	repo     *repository.Repo
+	validate *validator.Validate
 }
 
 type MovieSubmission struct {
-	Title       string  `json:"title"`
-	ReleaseYear int     `json:"release_year"`
-	Duration    int     `json:"duration"`
-	GenreIDs    []int64 `json:"genre_ids"`
-	ActorIDs    []int64 `json:"actor_ids"`
+	Title       string  `json:"title" validate:"required"`
+	ReleaseYear int     `json:"release_year" validate:"required"`
+	Duration    int     `json:"duration" validate:"required,gte=1,lte=100000"`
+	GenreIDs    []int64 `json:"genre_ids" validate:"dive,gte=1"`
+	ActorIDs    []int64 `json:"actor_ids" validate:"dive,gte=1"`
 }
 
 // MoviePatch uses pointers so users can do partial updates for movie data
@@ -25,24 +29,27 @@ type MovieSubmission struct {
 type MoviePatch struct {
 	Title       *string  `json:"title"`
 	ReleaseYear *int     `json:"release_year"`
-	Duration    *int     `json:"duration"`
-	GenreIDs    *[]int64 `json:"genre_ids"`
-	ActorIDs    *[]int64 `json:"actor_ids"`
+	Duration    *int     `json:"duration" validate:"omitempty,gte=1,lte=100000"`
+	GenreIDs    *[]int64 `json:"genre_ids" validate:"omitempty,dive,gte=1"`
+	ActorIDs    *[]int64 `json:"actor_ids" validate:"omitempty,dive,gte=1"`
 }
 
-func NewMovieService(r *repository.Repo) *MovieService {
-	return &MovieService{repo: r}
+func NewMovieService(r *repository.Repo, v *validator.Validate) *MovieService {
+	return &MovieService{repo: r, validate: v}
 }
 
 // For movies, your service should allow adding new movies with their title, release year, duration, associated genre, and actors.
 func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (models.Movie, error) {
-	//  Validate release year
+	// Struct level validation
+	if err := ms.validate.Struct(sub); err != nil {
+		fmt.Println("Validation fail")
+		return models.Movie{}, err
+	}
 
-	// Validate duration
-
-	// validate genreIDs
-
-	// Validate ActorIDs
+	// Business level validations
+	if err := validateReleaseYear(sub.ReleaseYear); err != nil {
+		return models.Movie{}, err
+	}
 
 	newMovie := models.Movie{
 		Title:       sub.Title,
@@ -76,6 +83,12 @@ func (ms *MovieService) GetAllMovies(ctx context.Context) ([]models.MovieDetail,
 }
 
 func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePatch) (models.Movie, error) {
+	// Struct level validation
+	if err := ms.validate.Struct(patch); err != nil {
+		fmt.Println("Validation fail")
+		return models.Movie{}, err
+	}
+
 	// First get existing movie
 	movieDetail, err := ms.GetMovie(ctx, id)
 	if err != nil {
@@ -90,6 +103,10 @@ func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePat
 	}
 
 	if patch.ReleaseYear != nil {
+		//  Validate release year
+		if err := validateReleaseYear(*patch.ReleaseYear); err != nil {
+			return models.Movie{}, err
+		}
 		movie.ReleaseYear = *patch.ReleaseYear
 	}
 
@@ -139,4 +156,19 @@ func (ms *MovieService) DeleteMovie(ctx context.Context, id int64) error {
 	err := ms.repo.DeleteMovie(ctx, id)
 	fmt.Println(err)
 	return err
+}
+
+// validateReleaseYear checks that the movie's release year is between 1888 and the current year
+func validateReleaseYear(year int) error {
+	earliestMovie := 1888
+	currentYear := time.Now().Year()
+
+	if year < earliestMovie {
+		return fmt.Errorf("release year cannot be earlier than %v", earliestMovie)
+	}
+	if year > currentYear {
+		return fmt.Errorf("release year cannot be in the future")
+	}
+
+	return nil
 }
