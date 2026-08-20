@@ -5,11 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"movies-api/internal/errs"
+	"movies-api/internal/models"
 	"movies-api/internal/repository"
 	"movies-api/internal/service"
 	"net/http"
+	"net/url"
 	"strconv"
 )
+
+type MovieFilter struct {
+	releaseYear *int
+}
 
 func (app *App) PostMovie(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -38,41 +45,48 @@ func (app *App) PostMovie(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(movie)
 }
 
+// parseFilters parses filters from the query into MovieFilter
+func parseFilters(query url.Values) (MovieFilter, error) {
+	var filter MovieFilter
+
+	// Parse "year"
+	if queryYear := query.Get("year"); queryYear != "" {
+		year, err := strconv.Atoi(queryYear)
+		if err != nil {
+			return MovieFilter{}, errs.ErrInvalidUserInput // invalid input
+		}
+
+		filter.releaseYear = &year
+	}
+
+	return filter, nil
+}
+
 func (app *App) GetAllMovies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	query := r.URL.Query()
 
 	// Check filters from query
-	if queryYear := query.Get("year"); queryYear != "" {
-		year, err := strconv.Atoi(queryYear)
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		}
-
-		movies, err := app.MovieService.GetMoviesByYear(ctx, year)
-		if err != nil {
-			if errors.Is(err, context.Canceled) {
-				log.Println("client disconnected before get movie finished")
-			} else {
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			}
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(movies)
+	filter, parseErr := parseFilters(query)
+	if parseErr != nil {
+		errs.WriteError(w, parseErr)
 		return
 	}
 
-	// Get all movies (no filters)
-	movies, err := app.MovieService.GetAllMovies(ctx)
+	var movies []models.MovieDetail
+	var err error
+
+	// Filter movies by release year
+	if filter.releaseYear != nil {
+		movies, err = app.MovieService.GetMoviesByYear(ctx, *filter.releaseYear)
+	} else {
+		// Get all movies (no filters)
+		movies, err = app.MovieService.GetAllMovies(ctx)
+	}
+
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			log.Println("client disconnected before get movie finished")
-		} else {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		}
+		errs.WriteError(w, err)
 		return
 	}
 

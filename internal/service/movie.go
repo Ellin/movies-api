@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"movies-api/internal/errs"
 	"movies-api/internal/models"
 	"movies-api/internal/repository"
 	"time"
@@ -177,10 +178,10 @@ func validateReleaseYear(year int) error {
 	currentYear := time.Now().Year()
 
 	if year < earliestMovie {
-		return fmt.Errorf("release year cannot be earlier than %v", earliestMovie)
+		return fmt.Errorf("%w: release year cannot be earlier than %v", errs.ErrInvalidUserInput, earliestMovie)
 	}
 	if year > currentYear {
-		return fmt.Errorf("release year cannot be in the future")
+		return fmt.Errorf("%w: release year cannot be in the future", errs.ErrInvalidUserInput)
 	}
 
 	return nil
