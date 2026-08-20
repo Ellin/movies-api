@@ -1,13 +1,10 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
-	"log"
+	"fmt"
 	"movies-api/internal/errs"
 	"movies-api/internal/models"
-	"movies-api/internal/repository"
 	"movies-api/internal/service"
 	"net/http"
 	"net/url"
@@ -30,13 +27,7 @@ func (app *App) PostMovie(w http.ResponseWriter, r *http.Request) {
 
 	movie, err := app.MovieService.AddMovie(ctx, sub)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			log.Println("client disconnected before add movie finished")
-		} else {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-
-			// ! TO DO - UPDATE ERROR HANDLING: distinguish between invalid/bad requests and internal server errors. Do not expose internal server error messages.
-		}
+		errs.WriteError(w, err)
 		return
 	}
 
@@ -60,6 +51,15 @@ func parseFilters(query url.Values) (MovieFilter, error) {
 	}
 
 	return filter, nil
+}
+
+func parseID(idStr string) (int64, error) {
+	id, err := strconv.ParseInt(idStr, 10, 64) // int64 equivalent of Atoi
+	if err != nil || id < 1 {
+		return 0, fmt.Errorf("id must be positive integer")
+	}
+
+	return id, nil
 }
 
 func (app *App) GetAllMovies(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +91,7 @@ func (app *App) GetAllMovies(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(movies)
 }
 
@@ -98,25 +99,20 @@ func (app *App) GetAllMovies(w http.ResponseWriter, r *http.Request) {
 func (app *App) GetMovie(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64) // int64 equivalent of Atoi
-	if err != nil || id < 1 {
-		http.NotFound(w, r)
+	id, err := parseID(r.PathValue("id"))
+	if err != nil {
+		errs.WriteError(w, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err))
 		return
 	}
 
 	movie, err := app.MovieService.GetMovie(ctx, id)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			log.Println("client disconnected before get movie finished")
-		} else if errors.Is(err, repository.ErrNotFound) {
-			http.NotFound(w, r)
-		} else {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		}
+		errs.WriteError(w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(movie)
 }
 
@@ -124,9 +120,9 @@ func (app *App) GetMovie(w http.ResponseWriter, r *http.Request) {
 func (app *App) PatchMovie(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64) // int64 equivalent of Atoi
-	if err != nil || id < 1 {
-		http.NotFound(w, r)
+	id, err := parseID(r.PathValue("id"))
+	if err != nil {
+		errs.WriteError(w, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err))
 		return
 	}
 
@@ -139,13 +135,7 @@ func (app *App) PatchMovie(w http.ResponseWriter, r *http.Request) {
 
 	movie, err := app.MovieService.PatchMovie(ctx, id, patch)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			log.Println("client disconnected before add movie finished")
-		} else {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-
-			// ! TO DO - UPDATE ERROR HANDLING: distinguish between invalid/bad requests and internal server errors. Do not expose internal server error messages.
-		}
+		errs.WriteError(w, err)
 		return
 	}
 
@@ -158,20 +148,14 @@ func (app *App) PatchMovie(w http.ResponseWriter, r *http.Request) {
 func (app *App) DeleteMovie(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64) // int64 equivalent of Atoi
-	if err != nil || id < 1 {
-		http.NotFound(w, r)
+	id, err := parseID(r.PathValue("id"))
+	if err != nil {
+		errs.WriteError(w, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err))
 		return
 	}
 
 	if err := app.MovieService.DeleteMovie(ctx, id); err != nil {
-		if errors.Is(err, context.Canceled) {
-			log.Println("client disconnected before get movie finished")
-		} else if errors.Is(err, repository.ErrNotFound) {
-			http.NotFound(w, r)
-		} else {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		}
+		errs.WriteError(w, err)
 		return
 	}
 

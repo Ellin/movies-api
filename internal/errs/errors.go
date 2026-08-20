@@ -24,7 +24,7 @@ func WriteError(w http.ResponseWriter, err error) {
 	}
 
 	if errors.Is(err, ErrInvalidUserInput) {
-		http.Error(w, ErrInvalidUserInput.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest) // Show detailed error so user can fix input
 		return
 	}
 

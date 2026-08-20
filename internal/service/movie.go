@@ -43,13 +43,12 @@ func NewMovieService(r *repository.Repo, v *validator.Validate) *MovieService {
 func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (models.Movie, error) {
 	// Struct level validation
 	if err := ms.validate.Struct(sub); err != nil {
-		fmt.Println("Validation fail")
-		return models.Movie{}, err
+		return models.Movie{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
 	// Business level validations
 	if err := validateReleaseYear(sub.ReleaseYear); err != nil {
-		return models.Movie{}, err
+		return models.Movie{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
 	newMovie := models.Movie{
@@ -86,8 +85,7 @@ func (ms *MovieService) GetAllMovies(ctx context.Context) ([]models.MovieDetail,
 func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePatch) (models.Movie, error) {
 	// Struct level validation
 	if err := ms.validate.Struct(patch); err != nil {
-		fmt.Println("Validation fail")
-		return models.Movie{}, err
+		return models.Movie{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
 	// First get existing movie
@@ -106,7 +104,7 @@ func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePat
 	if patch.ReleaseYear != nil {
 		//  Validate release year
 		if err := validateReleaseYear(*patch.ReleaseYear); err != nil {
-			return models.Movie{}, err
+			return models.Movie{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 		}
 		movie.ReleaseYear = *patch.ReleaseYear
 	}
@@ -161,7 +159,7 @@ func (ms *MovieService) DeleteMovie(ctx context.Context, id int64) error {
 
 func (ms *MovieService) GetMoviesByYear(ctx context.Context, year int) ([]models.MovieDetail, error) {
 	if err := validateReleaseYear(year); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
 	movies, err := ms.repo.GetMoviesByYear(ctx, year)
@@ -178,10 +176,10 @@ func validateReleaseYear(year int) error {
 	currentYear := time.Now().Year()
 
 	if year < earliestMovie {
-		return fmt.Errorf("%w: release year cannot be earlier than %v", errs.ErrInvalidUserInput, earliestMovie)
+		return fmt.Errorf("release year cannot be earlier than %v", earliestMovie)
 	}
 	if year > currentYear {
-		return fmt.Errorf("%w: release year cannot be in the future", errs.ErrInvalidUserInput)
+		return fmt.Errorf("release year cannot be in the future")
 	}
 
 	return nil
