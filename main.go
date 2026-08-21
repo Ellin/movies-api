@@ -7,6 +7,7 @@ import (
 	"movies-api/internal/handlers"
 	"movies-api/internal/repository"
 	"movies-api/internal/service"
+	"net/http"
 
 	"github.com/go-playground/validator/v10"
 	_ "github.com/mattn/go-sqlite3"
@@ -19,7 +20,6 @@ func main() {
 		return
 	}
 	defer db.Close()
-
 	fmt.Println("Connected to SQLite database successfully.")
 
 	err = database.InitDB(db)
@@ -37,6 +37,12 @@ func main() {
 		MovieService: service.NewMovieService(repo, validate),
 		GenreService: service.NewGenreService(repo),
 		ActorService: service.NewActorService(repo),
+	}
+
+	//  IF FLAG = RESET + DUMMY DATA
+	err = database.ResetDatabase(&app)
+	if err != nil {
+		log.Fatalln("reset database failure:", err)
 	}
 
 	// genr := models.Genre{ID: 1, Name: "Drama"}
@@ -73,10 +79,6 @@ func main() {
 	// fmt.Println(actor.Name)
 
 	// start server
-	// fmt.Println("Starting server...")
-	// err = http.ListenAndServe(":8080", NewRouter(&app))
-	// if err != nil {
-	// 	log.Fatalln("starting server:", err)
-	// }
-
+	fmt.Println("Starting server...")
+	log.Fatalln(http.ListenAndServe(":8080", NewRouter(&app)))
 }
