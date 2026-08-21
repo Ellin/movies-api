@@ -7,22 +7,30 @@ import (
 	"movies-api/internal/service"
 )
 
-// resetDatabase deletes all data without deleting the tables themselves. Reseeds database with dummy data.
+// resetDatabase deletes all data and reseeds database with dummy data. Used for testing.
 func ResetDatabase(app *handlers.App) error {
 	ctx := context.Background()
 
-	// Delete data from all data tables
 	query := `
-	DELETE FROM genres_movies;
-	DELETE FROM movies_actors;
-	DELETE FROM genres;
-	DELETE FROM actors;
-	DELETE FROM movies;
+	DROP TABLE genres_movies;
+	DROP TABLE movies_actors;
+	DROP TABLE genres;
+	DROP TABLE actors;
+	DROP TABLE movies;
 	`
+
+	// Delete all data
 	_, err := app.Repo.DB.ExecContext(ctx, query)
 	if err != nil {
 		return err
 	}
+	fmt.Println("Deleted all data from database")
+
+	// Reset schema and recreate tables
+	if err := InitDB(app.Repo.DB); err != nil {
+		return err
+	}
+	fmt.Println("Reset database schema")
 
 	// Repopulate tables with dummy data
 	if err := seedDatabase(ctx, app); err != nil {
@@ -67,7 +75,7 @@ func seedGenres(ctx context.Context, gs *service.GenreService) error {
 		}
 	}
 
-	fmt.Printf("database seeded with %d dummy genres\n", len(genres))
+	fmt.Printf("Database seeded with %d dummy genres\n", len(genres))
 	return nil
 }
 
@@ -183,7 +191,7 @@ func seedActors(ctx context.Context, as *service.ActorService) error {
 		}
 	}
 
-	fmt.Printf("database seeded with %d dummy actors\n", len(actors))
+	fmt.Printf("Database seeded with %d dummy actors\n", len(actors))
 	return nil
 }
 
@@ -299,6 +307,6 @@ func seedMovies(ctx context.Context, ms *service.MovieService) error {
 		}
 	}
 
-	fmt.Printf("database seeded with %d dummy movies\n", len(movies))
+	fmt.Printf("Database seeded with %d dummy movies\n", len(movies))
 	return nil
 }

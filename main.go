@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-
+	// Get CLI flags
 	dbFile, reset := parseFlags()
 
 	db, err := database.OpenDB(dbFile + "?_foreign_keys=on") // enforce foreign keys -> validate existence of rows referred to by foreign keys
@@ -24,14 +24,7 @@ func main() {
 		return
 	}
 	defer db.Close()
-	fmt.Println("Connected to SQLite database successfully.")
-
-	err = database.InitDB(db)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	fmt.Println("Database tables initialized successfully.")
+	fmt.Printf("Connected to SQLite database %s\n", dbFile)
 
 	// Initialize the application's dependencies
 	repo := &repository.Repo{DB: db}
@@ -43,13 +36,20 @@ func main() {
 		ActorService: service.NewActorService(repo),
 	}
 
-	// Clear database data and seed with dummy data
 	if reset {
-		err = database.ResetDatabase(&app)
-		if err != nil {
+		// Clear database and seed with dummy data
+		if err := database.ResetDatabase(&app); err != nil {
 			log.Fatalln("Reset database failure:", err)
+			return
+		}
+	} else {
+		// Initialize database tables without any dummy data
+		if err := database.InitDB(db); err != nil {
+			log.Fatalln("Database initialization failure:", err)
+			return
 		}
 	}
+	fmt.Println("Database initialized successfully")
 
 	// genr := models.Genre{ID: 1, Name: "Drama"}
 
