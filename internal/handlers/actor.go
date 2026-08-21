@@ -11,7 +11,6 @@ import (
 	"strconv"
 )
 
-// post
 func (app *App) PostActor(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -27,7 +26,7 @@ func (app *App) PostActor(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, context.Canceled) {
 			log.Println("client disconnected before add movie finished")
 		} else {
-			http.Error(w, err.Error(), http.StatusBadRequest) //!!!!!!!!!!!!!
+			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 		return
 	}

@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"movies-api/internal/database"
 	"movies-api/internal/handlers"
-	"movies-api/internal/models"
 	"movies-api/internal/repository"
 	"movies-api/internal/service"
 
@@ -62,17 +60,17 @@ func main() {
 	// }
 	// //
 	//actors
-	_, err = app.Repo.AddActor(ctx, models.Actor{Name: "Steven King", BirthDate: "25.05.1967"})
-	if err != nil {
-		fmt.Println(err)
-	}
-	actor := models.ActorSummary{}
-	fmt.Println("Finished adding actor")
-	actor, err = repo.GetActor(ctx, 1)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(actor.Name)
+	// _, err = app.Repo.AddActor(ctx, models.Actor{Name: "Steven King", BirthDate: "25.05.1967"})
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// actor := models.ActorDetail{}
+	// fmt.Println("Finished adding actor")
+	// actor, err = repo.GetActor(ctx, 1)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// fmt.Println(actor.Name)
 
 	// start server
 	// fmt.Println("Starting server...")

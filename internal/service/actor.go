@@ -54,9 +54,9 @@ func (as *ActorService) AddActor(ctx context.Context, sub ActorSubmission) (mode
 
 // You'll need functions to retrieve all actors, fetch a specific actor by ID, and filter actors by movie or birth date.
 
-func (as *ActorService) GetActor(ctx context.Context, id int64) (models.ActorSummary, error) {
+func (as *ActorService) GetActor(ctx context.Context, id int64) (models.ActorDetail, error) {
 	if id < 1 {
-		return models.ActorSummary{}, errors.New("id must be positive")
+		return models.ActorDetail{}, errors.New("id must be positive")
 	}
 
 	actor, err := as.repo.GetActor(ctx, id)
@@ -64,18 +64,18 @@ func (as *ActorService) GetActor(ctx context.Context, id int64) (models.ActorSum
 	return actor, err
 }
 
-func (as *ActorService) GetAllActors(ctx context.Context) ([]models.ActorSummary, error) {
+func (as *ActorService) GetAllActors(ctx context.Context) ([]models.ActorDetail, error) {
 	return as.repo.GetAllActors(ctx)
 }
 
 func (as *ActorService) PatchActor(ctx context.Context, id int64, patch ActorPatch) (models.Actor, error) {
 	// First get existing actor
-	actorSummary, err := as.GetActor(ctx, id)
+	ActorDetail, err := as.GetActor(ctx, id)
 	if err != nil {
 		return models.Actor{}, err
 	}
 
-	actor := stripActorSummary(actorSummary)
+	actor := stripActorDetail(ActorDetail)
 
 	// Update non-nil values of user input
 	if patch.Name != nil {
@@ -99,8 +99,8 @@ func (as *ActorService) PatchActor(ctx context.Context, id int64, patch ActorPat
 	return actor, nil
 }
 
-// stripActorSummary converts a ActorSummary object to Actor (removing movie details)
-func stripActorSummary(as models.ActorSummary) models.Actor {
+// stripActorDetail converts a ActorDetail object to Actor (removing movie details)
+func stripActorDetail(as models.ActorDetail) models.Actor {
 	actor := models.Actor{
 		ID:        as.ID,
 		Name:      as.Name,

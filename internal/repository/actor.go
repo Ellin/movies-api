@@ -48,30 +48,30 @@ func (r *Repo) AddActor(ctx context.Context, a models.Actor) (models.Actor, erro
 }
 
 // GetActor gets actor data from the actors table (READ)
-func (r *Repo) GetActor(ctx context.Context, id int64) (models.ActorSummary, error) {
+func (r *Repo) GetActor(ctx context.Context, id int64) (models.ActorDetail, error) {
 	// Get data from actors table
 	query := `SELECT id, name, birth_date
 	FROM actors WHERE id = ?;`
 
 	rows, err := r.DB.QueryContext(ctx, query, id)
 	if err != nil {
-		return models.ActorSummary{}, err
+		return models.ActorDetail{}, err
 	}
 	defer rows.Close()
 
-	var a models.ActorSummary
+	var a models.ActorDetail
 	err = r.DB.QueryRowContext(ctx, query, id).Scan(&a.ID, &a.Name, &a.BirthDate) // fill actor struct with data from found row
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return models.ActorSummary{}, ErrNotFound
+			return models.ActorDetail{}, ErrNotFound
 		} else {
-			return models.ActorSummary{}, fmt.Errorf("getting actor: %w", err)
+			return models.ActorDetail{}, fmt.Errorf("getting actor: %w", err)
 		}
 	}
 
 	a.Movies, err = r.getMoviesByActor(ctx, id)
 	if err != nil {
-		return models.ActorSummary{}, err
+		return models.ActorDetail{}, err
 	}
 
 	return a, nil
@@ -108,7 +108,7 @@ func (r *Repo) getMoviesByActor(ctx context.Context, actorID int64) ([]models.Mo
 	return movies, nil
 }
 
-func (r *Repo) GetAllActors(ctx context.Context) ([]models.ActorSummary, error) {
+func (r *Repo) GetAllActors(ctx context.Context) ([]models.ActorDetail, error) {
 	// make movie-actors map with actor id as key
 	actorMoviesMap, err := r.buildActorMoviesMap(ctx)
 	if err != nil {
@@ -123,11 +123,11 @@ func (r *Repo) GetAllActors(ctx context.Context) ([]models.ActorSummary, error) 
 	}
 	defer rows.Close()
 
-	var allActors []models.ActorSummary
+	var allActors []models.ActorDetail
 
 	// Get actors row by row
 	for rows.Next() {
-		var a models.ActorSummary
+		var a models.ActorDetail
 		err = rows.Scan(&a.ID, &a.Name, &a.BirthDate)
 		if err != nil {
 			return nil, fmt.Errorf("scanning actor row while getting all actors: %w", err)
