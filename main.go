@@ -18,10 +18,10 @@ func main() {
 	// Get CLI flags
 	dbFile, reset := parseFlags()
 
+	// Initialize database connection pool
 	db, err := database.OpenDB(dbFile + "?_foreign_keys=on") // enforce foreign keys -> validate existence of rows referred to by foreign keys
 	if err != nil {
-		log.Println(err)
-		return
+		log.Fatalln("Database connection failure:", err)
 	}
 	defer db.Close()
 	fmt.Printf("Connected to SQLite database %s\n", dbFile)
@@ -36,6 +36,7 @@ func main() {
 		ActorService: service.NewActorService(repo),
 	}
 
+	// Check database reset flag
 	if reset {
 		// Clear database and seed with dummy data
 		if err := database.ResetDatabase(&app); err != nil {
@@ -50,39 +51,6 @@ func main() {
 		}
 	}
 	fmt.Println("Database initialized successfully")
-
-	// genr := models.Genre{ID: 1, Name: "Drama"}
-
-	// res, err := app.repo.CreateGenre(genr)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return
-	// }
-
-	// fmt.Println("Created with:", res)
-
-	// fmt.Println(app.repo.GetGenreByID(res))
-
-	// fmt.Println(app.repo.GetAllGenres())
-
-	// //movies
-	// _, err = app.repo.AddMovie(nil, models.Movie{Title: "Spiderman", ReleaseYear: 2000, Duration: 120})
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// //
-	//actors
-	// _, err = app.Repo.AddActor(ctx, models.Actor{Name: "Steven King", BirthDate: "25.05.1967"})
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// actor := models.ActorDetail{}
-	// fmt.Println("Finished adding actor")
-	// actor, err = repo.GetActor(ctx, 1)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// fmt.Println(actor.Name)
 
 	// start server
 	fmt.Println("Starting server...")
