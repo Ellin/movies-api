@@ -20,6 +20,12 @@ func NewRouter(app *handlers.App) *http.ServeMux {
 	mux.HandleFunc("GET /api/genre/{id}", app.GetGenre)
 	mux.HandleFunc("PATCH /api/genre/{id}", app.PatchGenre)
 	mux.HandleFunc("DELETE /api/genre/{id}", app.DeleteGenre)
+	//actor routes
+	mux.HandleFunc("POST /api/actor", app.PostActor)
+	mux.HandleFunc("GET /api/actor", app.GetAllActors)
+	mux.HandleFunc("GET /api/actor/{id}", app.GetActor)
+	mux.HandleFunc("PATCH /api/actor/{id}", app.PatchActor)
+	mux.HandleFunc("DELETE /api/actor/{id}", app.DeleteActor)
 
 	return mux
 }
