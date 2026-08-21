@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"movies-api/internal/database"
@@ -14,7 +15,10 @@ import (
 )
 
 func main() {
-	db, err := database.OpenDB("./movies.db?_foreign_keys=on") // enforce foreign keys -> validate existence of rows referred to by foreign keys
+
+	dbFile, reset := parseFlags()
+
+	db, err := database.OpenDB(dbFile + "?_foreign_keys=on") // enforce foreign keys -> validate existence of rows referred to by foreign keys
 	if err != nil {
 		log.Println(err)
 		return
@@ -39,10 +43,12 @@ func main() {
 		ActorService: service.NewActorService(repo),
 	}
 
-	//  IF FLAG = RESET + DUMMY DATA
-	err = database.ResetDatabase(&app)
-	if err != nil {
-		log.Fatalln("reset database failure:", err)
+	// Clear database data and seed with dummy data
+	if reset {
+		err = database.ResetDatabase(&app)
+		if err != nil {
+			log.Fatalln("Reset database failure:", err)
+		}
 	}
 
 	// genr := models.Genre{ID: 1, Name: "Drama"}
@@ -81,4 +87,14 @@ func main() {
 	// start server
 	fmt.Println("Starting server...")
 	log.Fatalln(http.ListenAndServe(":8080", NewRouter(&app)))
+}
+
+// parseFlags parses the CLI flags, returning the database file name and reset bool
+func parseFlags() (string, bool) {
+	dbFile := flag.String("db", "movies.db", "Database file")
+	reset := flag.Bool("reset", false, "Resets database and seeds it with dummy data (default false)")
+
+	flag.Parse()
+
+	return *dbFile, *reset
 }
