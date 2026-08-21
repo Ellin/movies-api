@@ -25,12 +25,15 @@ type MovieDetail struct {
 }
 
 type Actor struct {
-	ID        int64
-	Name      string
-	BirthDate string
+	ID        int64   `json:"id"`
+	Name      string  `json:"name"`
+	BirthDate string  `json:"birth_date"`
+	MovieIDs  []int64 `json:"movie_ids"`
 }
 
 type ActorSummary struct {
-	ID   int64
-	Name string
+	ID        int64         `json:"id"`
+	Name      string        `json:"name"`
+	BirthDate string        `json:"birth_date"`
+	Movies    []MovieDetail `json:"movies"`
 }
