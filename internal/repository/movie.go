@@ -156,6 +156,24 @@ func (r *Repo) getActorsByMovie(ctx context.Context, movieID int64) ([]models.Ac
 }
 
 func (r *Repo) GetAllMovies(ctx context.Context) ([]models.MovieDetail, error) {
+	// Get all movies from movies table
+	query := `SELECT id, title, releaseYear, duration FROM movies ORDER BY id ASC;`
+	rows, err := r.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("error getting all movies: %w", err)
+	}
+	defer rows.Close()
+
+	allMovies, err := r.scanMoviesFromRows(ctx, rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return allMovies, nil
+}
+
+// scanMoviesFromRows is a helper that scans rows selected from the movies table and returns []models.MovieDetail
+func (r *Repo) scanMoviesFromRows(ctx context.Context, rows *sql.Rows) ([]models.MovieDetail, error) {
 	// make movie-genres map with movie id as key
 	movieGenresMap, err := r.buildMovieGenresMap(ctx)
 	if err != nil {
@@ -168,28 +186,20 @@ func (r *Repo) GetAllMovies(ctx context.Context) ([]models.MovieDetail, error) {
 		return nil, err
 	}
 
-	// get all movies from movies table
-	query := `SELECT id, title, releaseYear, duration FROM movies ORDER BY id ASC;`
-	rows, err := r.DB.QueryContext(ctx, query)
-	if err != nil {
-		return nil, fmt.Errorf("error getting all movies: %w", err)
-	}
-	defer rows.Close()
+	var movies []models.MovieDetail
 
-	var allMovies []models.MovieDetail
-
-	// Get movies row by row
+	// Scan rows and add each movie to movies
 	for rows.Next() {
 		var m models.MovieDetail
-		err = rows.Scan(&m.ID, &m.Title, &m.ReleaseYear, &m.Duration)
+		err := rows.Scan(&m.ID, &m.Title, &m.ReleaseYear, &m.Duration)
 		if err != nil {
-			return nil, fmt.Errorf("scanning movie row while getting all movies: %w", err)
+			return nil, fmt.Errorf("scanning movie row: %w", err)
 		}
 
 		m.Genres = movieGenresMap[m.ID]
 		m.Actors = movieActorsMap[m.ID]
 
-		allMovies = append(allMovies, m)
+		movies = append(movies, m)
 	}
 
 	// Check if rows.Next() loop stopped due to error
@@ -197,7 +207,7 @@ func (r *Repo) GetAllMovies(ctx context.Context) ([]models.MovieDetail, error) {
 		return nil, fmt.Errorf("iterating movie rows while getting all movies: %w", err)
 	}
 
-	return allMovies, nil
+	return movies, nil
 }
 
 // buildMovieGenresMap is a helper that creates a map where the key is the movie ID and value is all associated genres
@@ -390,4 +400,23 @@ func (r *Repo) DeleteMovie(ctx context.Context, id int64) error {
 	}
 
 	return nil
+}
+
+// GetMoviesByYear gets all movies that match the given release year
+func (r *Repo) GetMoviesByYear(ctx context.Context, year int) ([]models.MovieDetail, error) {
+	query := `SELECT id, title, releaseYear, duration FROM movies
+	WHERE releaseYear = ? ORDER BY id;`
+
+	rows, err := r.DB.QueryContext(ctx, query, year)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	movies, err := r.scanMoviesFromRows(ctx, rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return movies, nil
 }
