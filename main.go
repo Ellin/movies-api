@@ -4,16 +4,14 @@ import (
 	"fmt"
 	"log"
 	"movies-api/internal/database"
-	"movies-api/internal/models"
+	"movies-api/internal/handlers"
 	"movies-api/internal/repository"
+	"movies-api/internal/service"
+	"net/http"
 
+	"github.com/go-playground/validator/v10"
 	_ "github.com/mattn/go-sqlite3"
 )
-
-// application stores the app's dependencies
-type application struct {
-	repo *repository.Repo
-}
 
 func main() {
 	db, err := database.OpenDB("./movies.db?_foreign_keys=on") // enforce foreign keys -> validate existence of rows referred to by foreign keys
@@ -33,22 +31,39 @@ func main() {
 	fmt.Println("Database tables initialized successfully.")
 
 	// Initialize the application's dependencies
-	app := application{
-		repo: &repository.Repo{DB: db},
+	repo := &repository.Repo{DB: db}
+	validate := validator.New()
+	app := handlers.App{
+		Repo:         repo, // to be deleted once all services are set
+		MovieService: service.NewMovieService(repo, validate),
+		GenreService: service.NewGenreService(repo),
 	}
 
-	genr := models.Genre{ID: 1, Name: "Drama"}
+	// genr := models.Genre{ID: 1, Name: "Drama"}
 
-	res, err := app.repo.CreateGenre(genr)
+	// res, err := app.repo.CreateGenre(genr)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+
+	// fmt.Println("Created with:", res)
+
+	// fmt.Println(app.repo.GetGenreByID(res))
+
+	// fmt.Println(app.repo.GetAllGenres())
+
+	// movies
+	// _, err = app.repo.AddMovie(nil, models.Movie{Title: "Spiderman", ReleaseYear: 2000, Duration: 120})
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+
+	// start server
+	fmt.Println("Starting server...")
+	err = http.ListenAndServe(":8080", NewRouter(&app))
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatalln("starting server:", err)
 	}
-
-	fmt.Println("Created with:", res)
-
-	fmt.Println(app.repo.GetGenreByID(res))
-
-	fmt.Println(app.repo.GetAllGenres())
 
 }
