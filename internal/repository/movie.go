@@ -66,18 +66,11 @@ func (r *Repo) AddMovie(ctx context.Context, m models.Movie) (models.Movie, erro
 
 // GetMovie gets movie data from the movies table (READ)
 func (r *Repo) GetMovie(ctx context.Context, id int64) (models.MovieDetail, error) {
-	// Get data from movies table
 	query := `SELECT id, title, releaseYear, duration
 	FROM movies WHERE id = ?;`
 
-	rows, err := r.DB.QueryContext(ctx, query, id)
-	if err != nil {
-		return models.MovieDetail{}, err
-	}
-	defer rows.Close()
-
 	var m models.MovieDetail
-	err = r.DB.QueryRowContext(ctx, query, id).Scan(&m.ID, &m.Title, &m.ReleaseYear, &m.Duration) // fill movie struct with data from found row
+	err := r.DB.QueryRowContext(ctx, query, id).Scan(&m.ID, &m.Title, &m.ReleaseYear, &m.Duration) // fill movie struct with data from found row
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return models.MovieDetail{}, errs.ErrNotFound
