@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"movies-api/internal/errs"
 	"movies-api/internal/models"
 	"movies-api/internal/repository"
 	"time"
@@ -42,13 +43,12 @@ func NewMovieService(r *repository.Repo, v *validator.Validate) *MovieService {
 func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (models.Movie, error) {
 	// Struct level validation
 	if err := ms.validate.Struct(sub); err != nil {
-		fmt.Println("Validation fail")
-		return models.Movie{}, err
+		return models.Movie{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
 	// Business level validations
 	if err := validateReleaseYear(sub.ReleaseYear); err != nil {
-		return models.Movie{}, err
+		return models.Movie{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
 	newMovie := models.Movie{
@@ -85,8 +85,7 @@ func (ms *MovieService) GetAllMovies(ctx context.Context) ([]models.MovieDetail,
 func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePatch) (models.Movie, error) {
 	// Struct level validation
 	if err := ms.validate.Struct(patch); err != nil {
-		fmt.Println("Validation fail")
-		return models.Movie{}, err
+		return models.Movie{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
 	// First get existing movie
@@ -105,7 +104,7 @@ func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePat
 	if patch.ReleaseYear != nil {
 		//  Validate release year
 		if err := validateReleaseYear(*patch.ReleaseYear); err != nil {
-			return models.Movie{}, err
+			return models.Movie{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 		}
 		movie.ReleaseYear = *patch.ReleaseYear
 	}
@@ -156,6 +155,19 @@ func (ms *MovieService) DeleteMovie(ctx context.Context, id int64) error {
 	err := ms.repo.DeleteMovie(ctx, id)
 	fmt.Println(err)
 	return err
+}
+
+func (ms *MovieService) GetMoviesByYear(ctx context.Context, year int) ([]models.MovieDetail, error) {
+	if err := validateReleaseYear(year); err != nil {
+		return nil, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+	}
+
+	movies, err := ms.repo.GetMoviesByYear(ctx, year)
+	if err != nil {
+		return nil, err
+	}
+
+	return movies, nil
 }
 
 // validateReleaseYear checks that the movie's release year is between 1888 and the current year
