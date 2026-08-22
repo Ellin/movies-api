@@ -59,7 +59,7 @@ func createTableGenresMovies(db *sql.DB) (sql.Result, error) {
 		genre_id INTEGER NOT NULL,
 		movie_id INTEGER NOT NULL,
 		PRIMARY KEY (genre_id, movie_id),
-		FOREIGN KEY (genre_id) REFERENCES genres (id),
+		FOREIGN KEY (genre_id) REFERENCES genres (id) ON DELETE CASCADE,
 		FOREIGN KEY (movie_id) REFERENCES movies (id) ON DELETE CASCADE
 	);`
 
@@ -72,7 +72,7 @@ func createTableMoviesActors(db *sql.DB) (sql.Result, error) {
 		actor_id INTEGER NOT NULL,
 		PRIMARY KEY (movie_id, actor_id),
 		FOREIGN KEY (movie_id) REFERENCES movies (id) ON DELETE CASCADE,
-		FOREIGN KEY (actor_id) REFERENCES actors (id)
+		FOREIGN KEY (actor_id) REFERENCES actors (id) ON DELETE CASCADE
 	);`
 
 	return db.Exec(query)

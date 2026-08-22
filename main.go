@@ -33,7 +33,7 @@ func main() {
 		Repo:         repo, // to be deleted once all services are set
 		MovieService: service.NewMovieService(repo, validate),
 		GenreService: service.NewGenreService(repo),
-		ActorService: service.NewActorService(repo),
+		ActorService: service.NewActorService(repo, validate),
 	}
 
 	// Check database reset flag

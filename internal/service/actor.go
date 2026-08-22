@@ -4,119 +4,203 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"movies-api/internal/errs"
 	"movies-api/internal/models"
 	"movies-api/internal/repository"
+	"strings"
+	"time"
+	"unicode"
+	"unicode/utf8"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type ActorService struct {
-	repo *repository.Repo
+	repo     *repository.Repo
+	validate *validator.Validate
 }
 
 type ActorSubmission struct {
-	ID        int64   `json:"id"`
-	Name      string  `json:"name"`
-	BirthDate string  `json:"birth_date"`
-	MovieIDs  []int64 `json:"movie_ids"`
+	Name      string  `json:"name" validate:"required"`
+	BirthDate string  `json:"birth_date" validate:"required"`
+	MovieIDs  []int64 `json:"movie_ids" validate:"dive,gte=1"`
 }
 
-// MoviePatch uses pointers so users can do partial updates for movie data
+// ActorPatch uses pointers so users can do partial updates for movie data
 // Nil pointer values can be used to distinguish data not provided from zero/empty values
 type ActorPatch struct {
 	Name      *string  `json:"name"`
 	BirthDate *string  `json:"birth_date"`
-	MovieIDs  *[]int64 `json:"movie_ids"`
+	MovieIDs  *[]int64 `json:"movie_ids" validate:"omitempty,dive,gte=1"`
 }
 
-func NewActorService(r *repository.Repo) *ActorService {
-	return &ActorService{repo: r}
+var earliestActorBirthDate = time.Date(
+	1914, 11, 8,
+	0, 0, 0, 0,
+	time.UTC,
+)
+
+func NewActorService(r *repository.Repo, v *validator.Validate) *ActorService {
+	return &ActorService{
+		repo:     r,
+		validate: v,
+	}
 }
 
-// For movies, your service should allow adding new movies with their title, release year, duration, associated genre, and actors.
+// For actors, your service should allow adding new actors with their name, birth date and associated movies.
 func (as *ActorService) AddActor(ctx context.Context, sub ActorSubmission) (models.Actor, error) {
-	//  Validate Name
 
-	// Validate Birth Date
+	if err := as.validate.Struct(sub); err != nil {
+		return models.Actor{}, fmt.Errorf(
+			"%w: %w",
+			errs.ErrInvalidUserInput,
+			err,
+		)
+	}
 
-	// Validate MovieIDs
+	if err := validateActorName(sub.Name); err != nil {
+		return models.Actor{}, fmt.Errorf(
+			"%w: %w",
+			errs.ErrInvalidUserInput,
+			err,
+		)
+	}
+
+	if err := validateBirthDate(sub.BirthDate); err != nil {
+		return models.Actor{}, fmt.Errorf(
+			"%w: %w",
+			errs.ErrInvalidUserInput,
+			err,
+		)
+	}
 
 	newActor := models.Actor{
-		Name:      sub.Name,
+		Name:      strings.TrimSpace(sub.Name),
 		BirthDate: sub.BirthDate,
 		MovieIDs:  sub.MovieIDs,
 	}
 
-	// add actor into actors table
-	actor, err := as.repo.AddActor(ctx, newActor)
+	return as.repo.AddActor(ctx, newActor)
+}
 
-	// returned actor includes a newly generated id
-	return actor, err
+func validateBirthDate(birthDate string) error {
+	date, err := time.Parse("2006-01-02", birthDate)
+	if err != nil {
+		return errors.New("birth date must have format YYYY-MM-DD")
+	}
+
+	if date.Before(earliestActorBirthDate) {
+		return fmt.Errorf(
+			"birth date cannot be earlier than %s",
+			earliestActorBirthDate,
+		)
+	}
+
+	if date.After(time.Now()) {
+		return errors.New("birth date cannot be in the future")
+	}
+
+	return nil
+}
+
+func validateActorName(name string) error {
+	name = strings.TrimSpace(name)
+
+	if name == "" {
+		return errors.New("name cannot be empty")
+	}
+
+	if utf8.RuneCountInString(name) > 100 {
+		return errors.New("name is too long")
+	}
+
+	for _, r := range name {
+		if unicode.IsLetter(r) || unicode.IsSpace(r) || r == '-' || r == '\'' {
+			continue
+		}
+
+		return errors.New("name contains invalid characters")
+	}
+
+	return nil
 }
 
 // You'll need functions to retrieve all actors, fetch a specific actor by ID, and filter actors by movie or birth date.
 
-func (as *ActorService) GetActor(ctx context.Context, id int64) (models.ActorDetail, error) {
+func (as *ActorService) GetActor(ctx context.Context, id int64) (models.Actor, error) {
+
 	if id < 1 {
-		return models.ActorDetail{}, errors.New("id must be positive")
+		return models.Actor{}, fmt.Errorf(
+			"%w: id must be positive",
+			errs.ErrInvalidUserInput,
+		)
 	}
 
-	actor, err := as.repo.GetActor(ctx, id)
-
-	return actor, err
+	return as.repo.GetActor(ctx, id)
 }
 
-func (as *ActorService) GetAllActors(ctx context.Context) ([]models.ActorDetail, error) {
+func (as *ActorService) GetAllActors(ctx context.Context) ([]models.Actor, error) {
 	return as.repo.GetAllActors(ctx)
 }
 
 func (as *ActorService) PatchActor(ctx context.Context, id int64, patch ActorPatch) (models.Actor, error) {
-	// First get existing actor
-	ActorDetail, err := as.GetActor(ctx, id)
+	// Struct level validation
+	if err := as.validate.Struct(patch); err != nil {
+		return models.Actor{}, fmt.Errorf(
+			"%w: %w",
+			errs.ErrInvalidUserInput,
+			err,
+		)
+	}
+
+	// Get existing actor
+	actor, err := as.GetActor(ctx, id)
 	if err != nil {
 		return models.Actor{}, err
 	}
 
-	actor := stripActorDetail(ActorDetail)
-
-	// Update non-nil values of user input
+	// Update name if provided
 	if patch.Name != nil {
-		actor.Name = *patch.Name
+		if err := validateActorName(*patch.Name); err != nil {
+			return models.Actor{}, fmt.Errorf(
+				"%w: %w",
+				errs.ErrInvalidUserInput,
+				err,
+			)
+		}
+
+		actor.Name = strings.TrimSpace(*patch.Name)
 	}
 
+	// Update birth date if provided
 	if patch.BirthDate != nil {
+		if err := validateBirthDate(*patch.BirthDate); err != nil {
+			return models.Actor{}, fmt.Errorf(
+				"%w: %w",
+				errs.ErrInvalidUserInput,
+				err,
+			)
+		}
+
 		actor.BirthDate = *patch.BirthDate
 	}
 
+	// Replace movie relationships if provided
 	if patch.MovieIDs != nil {
 		actor.MovieIDs = *patch.MovieIDs
 	}
 
-	// Update database with updated actor
-	actor, err = as.repo.PatchActor(ctx, actor)
-	if err != nil {
-		return models.Actor{}, err
-	}
-
-	return actor, nil
-}
-
-// stripActorDetail converts a ActorDetail object to Actor (removing movie details)
-func stripActorDetail(as models.ActorDetail) models.Actor {
-	actor := models.Actor{
-		ID:        as.ID,
-		Name:      as.Name,
-		BirthDate: as.BirthDate,
-	}
-
-	// Strip movie details (leaving only movie IDs)
-	for _, movie := range as.Movies {
-		actor.MovieIDs = append(actor.MovieIDs, movie.ID)
-	}
-
-	return actor
+	return as.repo.PatchActor(ctx, actor)
 }
 
 func (as *ActorService) DeleteActor(ctx context.Context, id int64) error {
-	err := as.repo.DeleteActor(ctx, id)
-	fmt.Println(err)
-	return err
+
+	if id < 1 {
+		return fmt.Errorf(
+			"%w: id must be positive",
+			errs.ErrInvalidUserInput,
+		)
+	}
+
+	return as.repo.DeleteActor(ctx, id)
 }
