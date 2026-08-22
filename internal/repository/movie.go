@@ -93,7 +93,7 @@ func (r *Repo) GetMovie(ctx context.Context, id int64) (models.MovieDetail, erro
 }
 
 // getGenresByMovie is a helper that retrieves all genres (with id and name) associated with a given movie ID
-func (r *Repo) getGenresByMovie(ctx context.Context, movieID int64) ([]models.Genre, error) {
+func (r *Repo) getGenresByMovie(ctx context.Context, movieID int64) ([]models.GenreSummary, error) {
 	// Get genre data associated with the given movie ID
 	query := `SELECT gm.genre_id, g.name
 	FROM genres_movies gm JOIN genres g ON gm.genre_id = g.id
@@ -105,9 +105,9 @@ func (r *Repo) getGenresByMovie(ctx context.Context, movieID int64) ([]models.Ge
 	}
 	defer rows.Close()
 
-	var genres []models.Genre
+	var genres []models.GenreSummary
 	for rows.Next() {
-		var g models.Genre
+		var g models.GenreSummary
 		err = rows.Scan(&g.ID, &g.Name)
 		if err != nil {
 			return nil, fmt.Errorf("scanning rows: %w", err)
@@ -211,7 +211,7 @@ func (r *Repo) scanMoviesFromRows(ctx context.Context, rows *sql.Rows) ([]models
 }
 
 // buildMovieGenresMap is a helper that creates a map where the key is the movie ID and value is all associated genres
-func (r *Repo) buildMovieGenresMap(ctx context.Context) (map[int64][]models.Genre, error) {
+func (r *Repo) buildMovieGenresMap(ctx context.Context) (map[int64][]models.GenreSummary, error) {
 	// join genres_movies data with genre names
 	query := `SELECT movie_id, genre_id, g.name AS genre_name
 	FROM genres_movies gm JOIN genres g ON g.id = gm.genre_id
@@ -224,10 +224,10 @@ func (r *Repo) buildMovieGenresMap(ctx context.Context) (map[int64][]models.Genr
 	defer rows.Close()
 
 	// make movie-genres map with movie id as key
-	movieGenresMap := make(map[int64][]models.Genre)
+	movieGenresMap := make(map[int64][]models.GenreSummary)
 	for rows.Next() {
 		var movieID int64
-		var genre models.Genre
+		var genre models.GenreSummary
 
 		err = rows.Scan(&movieID, &genre.ID, &genre.Name)
 		if err != nil {
@@ -414,6 +414,25 @@ func (r *Repo) GetMoviesByYear(ctx context.Context, year int) ([]models.MovieDet
 	WHERE releaseYear = ? ORDER BY id;`
 
 	rows, err := r.DB.QueryContext(ctx, query, year)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	movies, err := r.scanMoviesFromRows(ctx, rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return movies, nil
+}
+
+func (r *Repo) GetMoviesByGenre(ctx context.Context, genre int64) ([]models.MovieDetail, error) {
+	query := `SELECT movies.id, movies.title, movies.releaseYear, movies.duration
+	FROM movies JOIN genres_movies ON movies.id = genres_movies.movie_id
+	WHERE genres_movies.genre_id = ?`
+
+	rows, err := r.DB.QueryContext(ctx, query, genre)
 	if err != nil {
 		return nil, err
 	}
