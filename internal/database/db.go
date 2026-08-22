@@ -25,37 +25,37 @@ func OpenDB(dsn string) (*sql.DB, error) {
 }
 
 func createTableGenres(db *sql.DB) (sql.Result, error) {
-	sql := `CREATE TABLE IF NOT EXISTS genres (
+	query := `CREATE TABLE IF NOT EXISTS genres (
 		id INTEGER PRIMARY KEY,
 		name TEXT NOT NULL
 	);`
 
-	return db.Exec(sql)
+	return db.Exec(query)
 }
 
 func createTableMovies(db *sql.DB) (sql.Result, error) {
-	sql := `CREATE TABLE IF NOT EXISTS movies (
+	query := `CREATE TABLE IF NOT EXISTS movies (
 		id INTEGER PRIMARY KEY,
 		title TEXT NOT NULL,
 		releaseYear INTEGER NOT NULL,
 		duration INTEGER NOT NULL
 	);`
 
-	return db.Exec(sql)
+	return db.Exec(query)
 }
 
 func createTableActors(db *sql.DB) (sql.Result, error) {
-	sql := `CREATE TABLE IF NOT EXISTS actors (
+	query := `CREATE TABLE IF NOT EXISTS actors (
 		id INTEGER PRIMARY KEY,
 		name TEXT NOT NULL,
 		birth_date TEXT NOT NULL
 	);`
 
-	return db.Exec(sql)
+	return db.Exec(query)
 }
 
 func createTableGenresMovies(db *sql.DB) (sql.Result, error) {
-	sql := `CREATE TABLE IF NOT EXISTS genres_movies (
+	query := `CREATE TABLE IF NOT EXISTS genres_movies (
 		genre_id INTEGER NOT NULL,
 		movie_id INTEGER NOT NULL,
 		PRIMARY KEY (genre_id, movie_id),
@@ -63,11 +63,11 @@ func createTableGenresMovies(db *sql.DB) (sql.Result, error) {
 		FOREIGN KEY (movie_id) REFERENCES movies (id) ON DELETE CASCADE
 	);`
 
-	return db.Exec(sql)
+	return db.Exec(query)
 }
 
 func createTableMoviesActors(db *sql.DB) (sql.Result, error) {
-	sql := `CREATE TABLE IF NOT EXISTS movies_actors (
+	query := `CREATE TABLE IF NOT EXISTS movies_actors (
 		movie_id INTEGER NOT NULL,
 		actor_id INTEGER NOT NULL,
 		PRIMARY KEY (movie_id, actor_id),
@@ -75,7 +75,7 @@ func createTableMoviesActors(db *sql.DB) (sql.Result, error) {
 		FOREIGN KEY (actor_id) REFERENCES actors (id)
 	);`
 
-	return db.Exec(sql)
+	return db.Exec(query)
 }
 
 func InitDB(db *sql.DB) error {
