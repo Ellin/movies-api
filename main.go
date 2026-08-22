@@ -32,8 +32,8 @@ func main() {
 	app := handlers.App{
 		Repo:         repo, // to be deleted once all services are set
 		MovieService: service.NewMovieService(repo, validate),
+		ActorService: service.NewActorService(repo, validate),
 		GenreService: service.NewGenreService(repo, validate),
-		ActorService: service.NewActorService(repo),
 	}
 
 	// Check database reset flag
