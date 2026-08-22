@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"movies-api/internal/errs"
 	"movies-api/internal/models"
 )
 
@@ -37,7 +38,7 @@ func (r *Repo) GetGenre(ctx context.Context, id int64) (models.Genre, error) {
 	err := row.Scan(&genre.ID, &genre.Name)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return models.Genre{}, ErrNotFound
+			return models.Genre{}, errs.ErrNotFound
 		}
 		return models.Genre{}, fmt.Errorf("scanning the data from genre row to struct: %w", err)
 	}
@@ -90,7 +91,7 @@ func (r *Repo) PatchGenre(ctx context.Context, g models.Genre) (models.Genre, er
 	}
 
 	if rows == 0 {
-		return models.Genre{}, ErrNotFound
+		return models.Genre{}, errs.ErrNotFound
 	}
 
 	return g, nil
@@ -112,7 +113,7 @@ func (r *Repo) DeleteGenre(ctx context.Context, id int64) error {
 	}
 
 	if rows == 0 {
-		return ErrNotFound
+		return errs.ErrNotFound
 	}
 	return nil
 }

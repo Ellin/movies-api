@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"movies-api/internal/errs"
 	"movies-api/internal/models"
 )
 
@@ -36,6 +37,9 @@ func (r *Repo) AddMovie(ctx context.Context, m models.Movie) (models.Movie, erro
 		query := `INSERT INTO genres_movies (genre_id, movie_id) VALUES (?, ?);`
 		_, err = tx.ExecContext(ctx, query, genreID, m.ID)
 		if err != nil {
+			if isForeignKeyError(err) {
+				return models.Movie{}, fmt.Errorf("%w: referenced genre ID invalid", errs.ErrInvalidUserInput)
+			}
 			return models.Movie{}, fmt.Errorf("linking genre %d to movie: %w", genreID, err)
 		}
 	}
@@ -45,6 +49,9 @@ func (r *Repo) AddMovie(ctx context.Context, m models.Movie) (models.Movie, erro
 		query := `INSERT INTO movies_actors (movie_id, actor_id) VALUES (?, ?);`
 		_, err = tx.ExecContext(ctx, query, m.ID, actorID)
 		if err != nil {
+			if isForeignKeyError(err) {
+				return models.Movie{}, fmt.Errorf("%w: referenced actor ID invalid", errs.ErrInvalidUserInput)
+			}
 			return models.Movie{}, fmt.Errorf("linking actor %d to movie: %w", actorID, err)
 		}
 	}
@@ -59,21 +66,14 @@ func (r *Repo) AddMovie(ctx context.Context, m models.Movie) (models.Movie, erro
 
 // GetMovie gets movie data from the movies table (READ)
 func (r *Repo) GetMovie(ctx context.Context, id int64) (models.MovieDetail, error) {
-	// Get data from movies table
 	query := `SELECT id, title, releaseYear, duration
 	FROM movies WHERE id = ?;`
 
-	rows, err := r.DB.QueryContext(ctx, query, id)
-	if err != nil {
-		return models.MovieDetail{}, err
-	}
-	defer rows.Close()
-
 	var m models.MovieDetail
-	err = r.DB.QueryRowContext(ctx, query, id).Scan(&m.ID, &m.Title, &m.ReleaseYear, &m.Duration) // fill movie struct with data from found row
+	err := r.DB.QueryRowContext(ctx, query, id).Scan(&m.ID, &m.Title, &m.ReleaseYear, &m.Duration) // fill movie struct with data from found row
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return models.MovieDetail{}, ErrNotFound
+			return models.MovieDetail{}, errs.ErrNotFound
 		} else {
 			return models.MovieDetail{}, fmt.Errorf("getting movie: %w", err)
 		}
@@ -328,7 +328,7 @@ func (r *Repo) updateMovie(ctx context.Context, tx *sql.Tx, m models.Movie) erro
 	}
 
 	if rows == 0 {
-		return ErrNotFound
+		return errs.ErrNotFound
 	}
 
 	return nil
@@ -351,6 +351,9 @@ func (r *Repo) updateMovieGenres(ctx context.Context, tx *sql.Tx, m models.Movie
 
 		_, err := tx.ExecContext(ctx, query, genreID, m.ID)
 		if err != nil {
+			if isForeignKeyError(err) {
+				return fmt.Errorf("%w: referenced genre ID invalid", errs.ErrInvalidUserInput)
+			}
 			return fmt.Errorf("linking genre %d to movie: %w", genreID, err)
 		}
 	}
@@ -374,6 +377,9 @@ func (r *Repo) updateMovieActors(ctx context.Context, tx *sql.Tx, m models.Movie
 
 		_, err := tx.ExecContext(ctx, query, m.ID, actorID)
 		if err != nil {
+			if isForeignKeyError(err) {
+				return fmt.Errorf("%w: referenced actor ID invalid", errs.ErrInvalidUserInput)
+			}
 			return fmt.Errorf("linking actor %d to movie: %w", actorID, err)
 		}
 	}
@@ -396,7 +402,7 @@ func (r *Repo) DeleteMovie(ctx context.Context, id int64) error {
 	}
 
 	if rows == 0 {
-		return ErrNotFound
+		return errs.ErrNotFound
 	}
 
 	return nil
