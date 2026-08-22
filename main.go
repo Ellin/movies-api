@@ -32,7 +32,7 @@ func main() {
 	app := handlers.App{
 		Repo:         repo, // to be deleted once all services are set
 		MovieService: service.NewMovieService(repo, validate),
-		GenreService: service.NewGenreService(repo),
+		GenreService: service.NewGenreService(repo, validate),
 		ActorService: service.NewActorService(repo),
 	}
 
@@ -63,6 +63,5 @@ func parseFlags() (string, bool) {
 	reset := flag.Bool("reset", false, "Resets database and seeds it with dummy data (default false)")
 
 	flag.Parse()
-
 	return *dbFile, *reset
 }

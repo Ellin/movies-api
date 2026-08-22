@@ -13,6 +13,7 @@ import (
 
 type MovieFilter struct {
 	releaseYear *int
+	genre       *int64
 }
 
 func (app *App) PostMovie(w http.ResponseWriter, r *http.Request) {
@@ -50,6 +51,16 @@ func parseFilters(query url.Values) (MovieFilter, error) {
 		filter.releaseYear = &year
 	}
 
+	// Parse "genre"
+	if queryGenre := query.Get("genre"); queryGenre != "" {
+		genre, err := parseID(queryGenre)
+		if err != nil {
+			return MovieFilter{}, errs.ErrInvalidUserInput // invalid input
+		}
+
+		filter.genre = &genre
+	}
+
 	return filter, nil
 }
 
@@ -80,6 +91,8 @@ func (app *App) GetAllMovies(w http.ResponseWriter, r *http.Request) {
 	// Filter movies by release year
 	if filter.releaseYear != nil {
 		movies, err = app.MovieService.GetMoviesByYear(ctx, *filter.releaseYear)
+	} else if filter.genre != nil {
+		movies, err = app.MovieService.GetMoviesByGenre(ctx, *filter.genre)
 	} else {
 		// Get all movies (no filters)
 		movies, err = app.MovieService.GetAllMovies(ctx)
