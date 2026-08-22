@@ -12,13 +12,6 @@ import (
 
 // CREATE
 func (r *Repo) AddGenre(ctx context.Context, gnr models.Genre) (models.Genre, error) {
-	tx, err := r.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return models.Genre{}, fmt.Errorf("opening transaction for genre addition: %w", err)
-	}
-
-	defer tx.Rollback()
-
 	//add genre into genres table
 	query := "INSERT INTO genres (name) VALUES (?)"
 
@@ -31,24 +24,6 @@ func (r *Repo) AddGenre(ctx context.Context, gnr models.Genre) (models.Genre, er
 	gnr.ID, err = res.LastInsertId()
 	if err != nil {
 		return models.Genre{}, fmt.Errorf("getting inserted ID while adding genre: %w", err)
-	}
-
-	//add connections to JOIN table movies_genres
-
-	for _, movieID := range gnr.MovieIDs {
-		query := "INSERT INTO movies_genres (genre_id, movie_id) VALUES (?, ?)"
-
-		_, err := tx.ExecContext(ctx, query, gnr.ID, movieID)
-		if err != nil {
-			return models.Genre{}, fmt.Errorf("making connection in movies_genres table: %w", err)
-		}
-
-	}
-	//commit transaction
-
-	err = tx.Commit()
-	if err != nil {
-		return models.Genre{}, fmt.Errorf("committing transaction for adding genre: %w", err)
 	}
 
 	return gnr, nil
@@ -75,7 +50,7 @@ func (r *Repo) GetGenre(ctx context.Context, id int64) (models.Genre, error) {
 
 // READ 1.2
 func (r *Repo) GetAllGenres(ctx context.Context) ([]models.Genre, error) {
-	query := "SELECT id, name, movie_id FROM genres ORDER BY name"
+	query := "SELECT id, name FROM genres ORDER BY name"
 	rows, err := r.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("getting genres from genre table: %w", err)
@@ -160,6 +135,12 @@ func (r *Repo) DeleteGenre(ctx context.Context, id int64) error {
 	}
 
 	defer tx.Rollback()
+	//remove all the connections with the genre that is being removed
+	connectionQuery := `DELETE FROM genres_movies WHERE genre_id = ?`
+	_, err = tx.ExecContext(ctx, connectionQuery, id)
+	if err != nil {
+		return fmt.Errorf("deleting connection from genres_movies: %w", err)
+	}
 
 	//delete from genres table
 	query := `DELETE FROM genres WHERE id = ?;`
@@ -179,13 +160,6 @@ func (r *Repo) DeleteGenre(ctx context.Context, id int64) error {
 		return ErrNotFound
 	}
 
-	//remove all the connections with the genre that is being removed
-	connectionQuery := `DELETE FROM genres_movies WHERE genre_id = ?`
-	_, err = tx.ExecContext(ctx, connectionQuery, id)
-	if err != nil {
-		return fmt.Errorf("deleting connection from genres_movies: %w", err)
-	}
-
 	//commit transaction
 	err = tx.Commit()
 	if err != nil {
@@ -195,32 +169,32 @@ func (r *Repo) DeleteGenre(ctx context.Context, id int64) error {
 }
 
 // // getMoviesByGenre is a helper that retrieves all movies (with id and title) associated with a given actor ID
-// func (r *Repo) getMoviesByGenre(ctx context.Context, genreID int64) ([]models.MovieDetail, error) {
-// 	// Get genre data associated with the given movie ID
-// 	query := `SELECT ma.movie_id, m.title
-// 	FROM movies_genres ma JOIN movies m ON ma.movie_id = m.id
-// 	WHERE ma.genre_id = ?;`
+func (r *Repo) getMoviesByGenre(ctx context.Context, genreID int64) ([]models.MovieDetail, error) {
+	// Get genre data associated with the given movie ID
+	query := `SELECT ma.movie_id, m.title
+	FROM movies_genres ma JOIN movies m ON ma.movie_id = m.id
+	WHERE ma.genre_id = ?;`
 
-// 	rows, err := r.DB.QueryContext(ctx, query, genreID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer rows.Close()
+	rows, err := r.DB.QueryContext(ctx, query, genreID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-// 	var movies []models.MovieDetail
-// 	for rows.Next() {
-// 		var movie models.MovieDetail
-// 		err = rows.Scan(&movie.ID, &movie.Title, &movie.ReleaseYear, &movie.Duration, &movie.Genres, &movie.Actors)
-// 		if err != nil {
-// 			return nil, fmt.Errorf("scanning rows: %w", err)
-// 		}
-// 		movies = append(movies, movie)
-// 	}
+	var movies []models.MovieDetail
+	for rows.Next() {
+		var movie models.MovieDetail
+		err = rows.Scan(&movie.ID, &movie.Title, &movie.ReleaseYear, &movie.Duration, &movie.Genres, &movie.Actors)
+		if err != nil {
+			return nil, fmt.Errorf("scanning rows: %w", err)
+		}
+		movies = append(movies, movie)
+	}
 
-// 	// Check if rows.Next() loop stopped due to error
-// 	if err := rows.Err(); err != nil {
-// 		return nil, fmt.Errorf("iterating rows: %w", err)
-// 	}
+	// Check if rows.Next() loop stopped due to error
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating rows: %w", err)
+	}
 
-// 	return movies, nil
-// }
+	return movies, nil
+}

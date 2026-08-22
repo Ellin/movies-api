@@ -4,19 +4,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"movies-api/internal/errs"
 	"movies-api/internal/models"
 	"movies-api/internal/repository"
+
+	"github.com/go-playground/validator/v10"
 )
 
 // service layer for genres
 type GenreService struct {
-	repo *repository.Repo
+	repo     *repository.Repo
+	validate *validator.Validate
 }
 
 // package prepared for submission
 type GenreSubmission struct {
-	Name     string  `json:"name"`
-	MovieIDs []int64 `json:"movie_ids"`
+	Name string `json:"name" validate:"required"`
 }
 
 type GenrePatch struct {
@@ -24,12 +27,17 @@ type GenrePatch struct {
 }
 
 // initialize genre service
-func NewGenreService(r *repository.Repo) *GenreService {
-	return &GenreService{repo: r}
+func NewGenreService(r *repository.Repo, v *validator.Validate) *GenreService {
+	return &GenreService{repo: r, validate: v}
 }
 
 // validate the data and call the repo lvl
 func (gs *GenreService) AddGenre(ctx context.Context, sub GenreSubmission) (models.Genre, error) {
+
+	if err := gs.validate.Struct(sub); err != nil {
+		return models.Genre{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+	}
+
 	//pack data in
 	NewGenre := models.Genre{
 		Name: sub.Name,
@@ -66,8 +74,10 @@ func (gs *GenreService) PatchGenre(ctx context.Context, id int64, patch GenrePat
 	return g, nil
 }
 
-func (gs *MovieService) DeleteGenre(ctx context.Context, id int64) error {
+func (gs *MovieService) DeleteGenre(ctx context.Context, id int64, force bool) error {
+	if !force {
+		return errs.ErrForce
+	}
 	err := gs.repo.DeleteGenre(ctx, id)
-	fmt.Println(err)
 	return err
 }

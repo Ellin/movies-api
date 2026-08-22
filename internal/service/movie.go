@@ -184,3 +184,13 @@ func validateReleaseYear(year int) error {
 
 	return nil
 }
+
+func (ms *MovieService) GetMoviesByGenre(ctx context.Context, genre int64) ([]models.MovieDetail, error) {
+
+	movies, err := ms.repo.GetMoviesByGenre(ctx, genre)
+	if err != nil {
+		return nil, err
+	}
+
+	return movies, nil
+}

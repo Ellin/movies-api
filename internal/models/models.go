@@ -1,11 +1,18 @@
 package models
 
+// genre structs
 type Genre struct {
 	ID       int64   `json:"id"`
 	Name     string  `json:"name"`
 	MovieIDs []int64 `json:"movie_ids"`
 }
 
+type GenreSummary struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
+// movie structs
 type Movie struct {
 	ID          int64   `json:"id"`
 	Title       string  `json:"title"`
@@ -21,10 +28,11 @@ type MovieDetail struct {
 	Title       string         `json:"title"`
 	ReleaseYear int            `json:"release_year"`
 	Duration    int            `json:"duration"`
-	Genres      []Genre        `json:"genres"`
+	Genres      []GenreSummary `json:"genres"`
 	Actors      []ActorSummary `json:"actors"`
 }
 
+// actor structs
 type Actor struct {
 	ID        int64   `json:"id"`
 	Name      string  `json:"name"`

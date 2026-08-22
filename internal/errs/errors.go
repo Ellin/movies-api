@@ -11,6 +11,8 @@ import (
 // Invalid user input
 var ErrInvalidUserInput = errors.New("invalid input")
 
+var ErrForce = errors.New("operation requires force")
+
 // WriteError chooses the appropriate error response and writes to http.ResponseWrite
 func WriteError(w http.ResponseWriter, err error) {
 	if errors.Is(err, context.Canceled) {
@@ -28,5 +30,9 @@ func WriteError(w http.ResponseWriter, err error) {
 		return
 	}
 
+	if errors.Is(err, ErrForce) {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
