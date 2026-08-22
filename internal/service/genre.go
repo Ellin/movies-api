@@ -60,15 +60,15 @@ func (gs *GenreService) GetGenre(ctx context.Context, id int64) (models.Genre, e
 	return gs.repo.GetGenre(ctx, id)
 }
 
-func (gs *GenreService) PatchGenre(ctx context.Context, id int64, patch GenrePatch) (models.Genre, error) {
-	g := models.Genre{ID: id}
+func (gs *GenreService) PatchGenre(ctx context.Context, id int64, patch GenrePatch) (models.GenreSummary, error) {
+	g := models.GenreSummary{ID: id}
 	if patch.Name != nil {
 		g.Name = *patch.Name
 	}
 
 	g, err := gs.repo.PatchGenre(ctx, g)
 	if err != nil {
-		return models.Genre{}, err
+		return models.GenreSummary{}, err
 	}
 
 	return g, nil

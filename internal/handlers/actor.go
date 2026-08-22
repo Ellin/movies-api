@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
-	"movies-api/internal/repository"
+	"movies-api/internal/errs"
 	"movies-api/internal/service"
 	"net/http"
 	"strconv"
@@ -68,7 +68,7 @@ func (app *App) GetActor(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			log.Println("client disconnected before get movie finished")
-		} else if errors.Is(err, repository.ErrNotFound) {
+		} else if errors.Is(err, errs.ErrNotFound) {
 			http.NotFound(w, r)
 		} else {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -125,7 +125,7 @@ func (app *App) DeleteActor(w http.ResponseWriter, r *http.Request) {
 	if err := app.ActorService.DeleteActor(ctx, id); err != nil {
 		if errors.Is(err, context.Canceled) {
 			log.Println("client disconnected before get movie finished")
-		} else if errors.Is(err, repository.ErrNotFound) {
+		} else if errors.Is(err, errs.ErrNotFound) {
 			http.NotFound(w, r)
 		} else {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

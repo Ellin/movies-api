@@ -4,12 +4,8 @@ import (
 	"context"
 	"errors"
 	"log"
-	"movies-api/internal/repository"
 	"net/http"
 )
-
-// Invalid user input
-var ErrInvalidUserInput = errors.New("invalid input")
 
 var ErrForce = errors.New("operation requires force")
 
@@ -20,8 +16,8 @@ func WriteError(w http.ResponseWriter, err error) {
 		return
 	}
 
-	if errors.Is(err, repository.ErrNotFound) {
-		http.Error(w, repository.ErrNotFound.Error(), http.StatusNotFound)
+	if errors.Is(err, ErrNotFound) {
+		http.Error(w, ErrNotFound.Error(), http.StatusNotFound)
 		return
 	}
 
@@ -36,3 +32,6 @@ func WriteError(w http.ResponseWriter, err error) {
 	}
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
+
+var ErrInvalidUserInput = errors.New("invalid input")
+var ErrNotFound = errors.New("record not found")

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"movies-api/internal/errs"
 	"movies-api/internal/models"
 )
 
@@ -39,7 +40,7 @@ func (r *Repo) GetGenre(ctx context.Context, id int64) (models.Genre, error) {
 	err := row.Scan(&genre.ID, &genre.Name)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return models.Genre{}, ErrNotFound
+			return models.Genre{}, errs.ErrNotFound
 		}
 		return models.Genre{}, fmt.Errorf("scanning the data from genre row to struct: %w", err)
 	}
@@ -105,21 +106,21 @@ func (r *Repo) buildMovieIDslice(ctx context.Context, gID int64) ([]int64, error
 }
 
 // UPDATE
-func (r *Repo) PatchGenre(ctx context.Context, g models.Genre) (models.Genre, error) {
+func (r *Repo) PatchGenre(ctx context.Context, g models.GenreSummary) (models.GenreSummary, error) {
 	query := `UPDATE genres
 	SET name = ?
 	WHERE id = ?;`
 	result, err := r.DB.ExecContext(ctx, query, g.Name, g.ID)
 	if err != nil {
-		return models.Genre{}, fmt.Errorf("updating genre: %w", err)
+		return models.GenreSummary{}, fmt.Errorf("updating genre: %w", err)
 	}
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return models.Genre{}, fmt.Errorf("getting affected rows while updating genre: %w", err)
+		return models.GenreSummary{}, fmt.Errorf("getting affected rows while updating genre: %w", err)
 	}
 
 	if rows == 0 {
-		return models.Genre{}, ErrNotFound
+		return models.GenreSummary{}, errs.ErrNotFound
 	}
 
 	return g, nil
@@ -157,7 +158,7 @@ func (r *Repo) DeleteGenre(ctx context.Context, id int64) error {
 	}
 
 	if rows == 0 {
-		return ErrNotFound
+		return errs.ErrNotFound
 	}
 
 	//commit transaction
@@ -172,7 +173,7 @@ func (r *Repo) DeleteGenre(ctx context.Context, id int64) error {
 func (r *Repo) getMoviesByGenre(ctx context.Context, genreID int64) ([]models.MovieDetail, error) {
 	// Get genre data associated with the given movie ID
 	query := `SELECT ma.movie_id, m.title
-	FROM movies_genres ma JOIN movies m ON ma.movie_id = m.id
+	FROM genres_movies ma JOIN movies m ON ma.movie_id = m.id
 	WHERE ma.genre_id = ?;`
 
 	rows, err := r.DB.QueryContext(ctx, query, genreID)

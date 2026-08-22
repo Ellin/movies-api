@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"movies-api/internal/errs"
 	"movies-api/internal/models"
 )
 
@@ -63,7 +64,7 @@ func (r *Repo) GetActor(ctx context.Context, id int64) (models.ActorDetail, erro
 	err = r.DB.QueryRowContext(ctx, query, id).Scan(&a.ID, &a.Name, &a.BirthDate) // fill actor struct with data from found row
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return models.ActorDetail{}, ErrNotFound
+			return models.ActorDetail{}, errs.ErrNotFound
 		} else {
 			return models.ActorDetail{}, fmt.Errorf("getting actor: %w", err)
 		}
@@ -224,7 +225,7 @@ func (r *Repo) updateActor(ctx context.Context, tx *sql.Tx, a models.Actor) erro
 	}
 
 	if rows == 0 {
-		return ErrNotFound
+		return errs.ErrNotFound
 	}
 
 	return nil
@@ -268,7 +269,7 @@ func (r *Repo) DeleteActor(ctx context.Context, id int64) error {
 	}
 
 	if rows == 0 {
-		return ErrNotFound
+		return errs.ErrNotFound
 	}
 
 	return nil
