@@ -12,11 +12,6 @@ import (
 	"strings"
 )
 
-type MovieFilter struct {
-	releaseYear *int
-	genre       *int64
-}
-
 func (app *App) PostMovie(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -40,29 +35,36 @@ func (app *App) PostMovie(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(movie)
 }
 
-// parseFilters parses filters from the query into MovieFilter
-func parseFilters(query url.Values) (MovieFilter, error) {
-	var filter MovieFilter
+// parseFilters parses filters from the query into models.MovieFilter
+func parseFilters(query url.Values) (models.MovieFilter, error) {
+	var filter models.MovieFilter
 
 	// Parse "year"
 	if queryYear := query.Get("year"); queryYear != "" {
 		year, err := strconv.Atoi(queryYear)
 		if err != nil {
-			return MovieFilter{}, errs.ErrInvalidUserInput // invalid input
+			return models.MovieFilter{}, errs.ErrInvalidUserInput // invalid input
 		}
 
-		filter.releaseYear = &year
+		filter.ReleaseYear = &year
 	}
 
 	// Parse "genre"
 	if queryGenre := query.Get("genre"); queryGenre != "" {
 		genre, err := parseID(queryGenre)
 		if err != nil {
-			return MovieFilter{}, errs.ErrInvalidUserInput // invalid input
+			return models.MovieFilter{}, errs.ErrInvalidUserInput // invalid input
 		}
 
-		filter.genre = &genre
+		filter.Genre = &genre
 	}
+
+	// Parse pagination input
+	pagination, err := models.ParsePagination(query)
+	if err != nil {
+		return models.MovieFilter{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+	}
+	filter.Pagination = pagination
 
 	return filter, nil
 }
@@ -92,13 +94,13 @@ func (app *App) GetAllMovies(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	// Filter movies by release year
-	if filter.releaseYear != nil {
-		movies, err = app.MovieService.GetMoviesByYear(ctx, *filter.releaseYear)
-	} else if filter.genre != nil {
-		movies, err = app.MovieService.GetMoviesByGenre(ctx, *filter.genre)
+	if filter.ReleaseYear != nil {
+		movies, err = app.MovieService.GetMoviesByYear(ctx, *filter.ReleaseYear)
+	} else if filter.Genre != nil {
+		movies, err = app.MovieService.GetMoviesByGenre(ctx, *filter.Genre)
 	} else {
 		// Get all movies (no filters)
-		movies, err = app.MovieService.GetAllMovies(ctx)
+		movies, err = app.MovieService.GetAllMovies(ctx, filter)
 	}
 
 	if err != nil {
