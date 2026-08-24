@@ -75,9 +75,6 @@ func (gs *GenreService) PatchGenre(ctx context.Context, id int64, patch GenrePat
 }
 
 func (gs *MovieService) DeleteGenre(ctx context.Context, id int64, force bool) error {
-	if !force {
-		return errs.ErrForce
-	}
-	err := gs.repo.DeleteGenre(ctx, id)
+	err := gs.repo.DeleteGenre(ctx, id, force)
 	return err
 }
