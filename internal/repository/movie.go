@@ -34,7 +34,8 @@ func (r *Repo) AddMovie(ctx context.Context, m models.Movie) (models.Movie, erro
 
 	// Insert into genres_movies table
 	for _, genreID := range m.GenreIDs {
-		query := `INSERT INTO genres_movies (genre_id, movie_id) VALUES (?, ?);`
+		query := `INSERT INTO genres_movies (genre_id, movie_id) VALUES (?, ?)
+		ON CONFLICT (genre_id, movie_id) DO NOTHING;`
 		_, err = tx.ExecContext(ctx, query, genreID, m.ID)
 		if err != nil {
 			if isForeignKeyError(err) {
@@ -46,7 +47,8 @@ func (r *Repo) AddMovie(ctx context.Context, m models.Movie) (models.Movie, erro
 
 	// Insert into movies_actors table
 	for _, actorID := range m.ActorIDs {
-		query := `INSERT INTO movies_actors (movie_id, actor_id) VALUES (?, ?);`
+		query := `INSERT INTO movies_actors (movie_id, actor_id) VALUES (?, ?)
+		ON CONFLICT (movie_id, actor_id) DO NOTHING;`
 		_, err = tx.ExecContext(ctx, query, m.ID, actorID)
 		if err != nil {
 			if isForeignKeyError(err) {
@@ -345,8 +347,7 @@ func (r *Repo) updateMovieGenres(ctx context.Context, tx *sql.Tx, m models.Movie
 
 	// Add new relationships
 	for _, genreID := range m.GenreIDs {
-		query := `INSERT INTO genres_movies(genre_id, movie_id)
-		VALUES(?, ?)
+		query := `INSERT INTO genres_movies(genre_id, movie_id)	VALUES(?, ?)
 		ON CONFLICT(genre_id, movie_id) DO NOTHING;`
 
 		_, err := tx.ExecContext(ctx, query, genreID, m.ID)
