@@ -11,11 +11,11 @@ import (
 )
 
 // AddMovie inserts a new movie into the movies table (CREATE)
-func (r *Repo) AddMovie(ctx context.Context, m models.Movie) (models.Movie, error) {
+func (r *Repo) AddMovie(ctx context.Context, m models.Movie) (models.MovieDetail, error) {
 	// Create new transaction
 	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
-		return models.Movie{}, fmt.Errorf("beginning transaction for adding movie: %w", err)
+		return models.MovieDetail{}, fmt.Errorf("beginning transaction for adding movie: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -23,13 +23,13 @@ func (r *Repo) AddMovie(ctx context.Context, m models.Movie) (models.Movie, erro
 	query := `INSERT INTO movies (title, releaseYear, duration) VALUES (?, ?, ?);`
 	result, err := tx.ExecContext(ctx, query, m.Title, m.ReleaseYear, m.Duration)
 	if err != nil {
-		return models.Movie{}, fmt.Errorf("adding movie: %w", err)
+		return models.MovieDetail{}, fmt.Errorf("adding movie: %w", err)
 	}
 
 	// Get newly inserted movie ID
 	m.ID, err = result.LastInsertId()
 	if err != nil {
-		return models.Movie{}, fmt.Errorf("getting inserted ID while adding movie: %w", err)
+		return models.MovieDetail{}, fmt.Errorf("getting inserted ID while adding movie: %w", err)
 	}
 
 	// Insert into genres_movies table
@@ -39,9 +39,9 @@ func (r *Repo) AddMovie(ctx context.Context, m models.Movie) (models.Movie, erro
 		_, err = tx.ExecContext(ctx, query, genreID, m.ID)
 		if err != nil {
 			if isForeignKeyError(err) {
-				return models.Movie{}, fmt.Errorf("%w: referenced genre ID invalid", errs.ErrInvalidUserInput)
+				return models.MovieDetail{}, fmt.Errorf("%w: referenced genre ID invalid", errs.ErrInvalidUserInput)
 			}
-			return models.Movie{}, fmt.Errorf("linking genre %d to movie: %w", genreID, err)
+			return models.MovieDetail{}, fmt.Errorf("linking genre %d to movie: %w", genreID, err)
 		}
 	}
 
@@ -52,18 +52,18 @@ func (r *Repo) AddMovie(ctx context.Context, m models.Movie) (models.Movie, erro
 		_, err = tx.ExecContext(ctx, query, m.ID, actorID)
 		if err != nil {
 			if isForeignKeyError(err) {
-				return models.Movie{}, fmt.Errorf("%w: referenced actor ID invalid", errs.ErrInvalidUserInput)
+				return models.MovieDetail{}, fmt.Errorf("%w: referenced actor ID invalid", errs.ErrInvalidUserInput)
 			}
-			return models.Movie{}, fmt.Errorf("linking actor %d to movie: %w", actorID, err)
+			return models.MovieDetail{}, fmt.Errorf("linking actor %d to movie: %w", actorID, err)
 		}
 	}
 
 	// Commit the transaction
 	if err = tx.Commit(); err != nil {
-		return models.Movie{}, fmt.Errorf("commiting transaction for adding movie: %w", err)
+		return models.MovieDetail{}, fmt.Errorf("commiting transaction for adding movie: %w", err)
 	}
 
-	return m, nil
+	return r.GetMovie(ctx, m.ID)
 }
 
 // GetMovie gets movie data from the movies table (READ)
@@ -281,35 +281,35 @@ func (r *Repo) buildMovieActorsMap(ctx context.Context) (map[int64][]models.Acto
 }
 
 // PatchMovie updates the movies table along with relationships in genres_movies and movies_actors tables with updated movie information
-func (r *Repo) PatchMovie(ctx context.Context, m models.Movie) (models.Movie, error) {
+func (r *Repo) PatchMovie(ctx context.Context, m models.Movie) (models.MovieDetail, error) {
 	// Create new transaction
 	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
-		return models.Movie{}, fmt.Errorf("beginning transaction for patching movie: %w", err)
+		return models.MovieDetail{}, fmt.Errorf("beginning transaction for patching movie: %w", err)
 	}
 	defer tx.Rollback()
 
 	// Update movies table
 	if err := r.updateMovie(ctx, tx, m); err != nil {
-		return models.Movie{}, err
+		return models.MovieDetail{}, err
 	}
 
 	// Update genres_movies table
 	if err := r.updateMovieGenres(ctx, tx, m); err != nil {
-		return models.Movie{}, err
+		return models.MovieDetail{}, err
 	}
 
 	// Update movies_actors table
 	if err := r.updateMovieActors(ctx, tx, m); err != nil {
-		return models.Movie{}, err
+		return models.MovieDetail{}, err
 	}
 
 	// Commit the transaction
 	if err = tx.Commit(); err != nil {
-		return models.Movie{}, fmt.Errorf("commiting transaction for patching movie: %w", err)
+		return models.MovieDetail{}, fmt.Errorf("commiting transaction for patching movie: %w", err)
 	}
 
-	return m, nil
+	return r.GetMovie(ctx, m.ID)
 }
 
 // updateMovie is a helper that updates the movies table with matching ID
