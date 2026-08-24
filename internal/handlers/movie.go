@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 type MovieFilter struct {
@@ -25,6 +26,8 @@ func (app *App) PostMovie(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
+
+	sub.Title = strings.TrimSpace(sub.Title)
 
 	movie, err := app.MovieService.AddMovie(ctx, sub)
 	if err != nil {
@@ -144,6 +147,10 @@ func (app *App) PatchMovie(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
+	}
+
+	if patch.Title != nil {
+		*patch.Title = strings.TrimSpace(*patch.Title)
 	}
 
 	movie, err := app.MovieService.PatchMovie(ctx, id, patch)
