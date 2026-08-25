@@ -45,6 +45,11 @@ func (r *Repo) GetGenre(ctx context.Context, id int64) (models.Genre, error) {
 		return models.Genre{}, fmt.Errorf("scanning the data from genre row to struct: %w", err)
 	}
 
+	genre.MovieIDs, err = r.buildMovieIDslice(ctx, id)
+	if err != nil {
+		return models.Genre{}, fmt.Errorf("getting movie IDs for genre: %w", err)
+	}
+
 	return genre, nil
 
 }
@@ -128,19 +133,21 @@ func (r *Repo) PatchGenre(ctx context.Context, g models.GenreSummary) (models.Ge
 
 //DELETE
 
-func (r *Repo) DeleteGenre(ctx context.Context, id int64) error {
-
+func (r *Repo) DeleteGenre(ctx context.Context, id int64, force bool) error {
 	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("deliting from genre table: %w", err)
 	}
 
 	defer tx.Rollback()
-	//remove all the connections with the genre that is being removed
-	connectionQuery := `DELETE FROM genres_movies WHERE genre_id = ?`
-	_, err = tx.ExecContext(ctx, connectionQuery, id)
+	//check if there're connections
+	checkConnectionQuery := `SELECT movie_id FROM genres_movies WHERE genre_id = ?`
+	rows, err := tx.QueryContext(ctx, checkConnectionQuery, id)
 	if err != nil {
-		return fmt.Errorf("deleting connection from genres_movies: %w", err)
+		return fmt.Errorf("getting rows from genres_movies: %w", err)
+	}
+	if rows != nil && !force {
+		return errs.ErrForce
 	}
 
 	//delete from genres table
@@ -152,12 +159,12 @@ func (r *Repo) DeleteGenre(ctx context.Context, id int64) error {
 	}
 
 	//getting the affected row to validate that we actually deleted the row
-	rows, err := res.RowsAffected()
+	rowNum, err := res.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("getting affected rows while deleting genre: %w", err)
 	}
 
-	if rows == 0 {
+	if rowNum == 0 {
 		return errs.ErrNotFound
 	}
 

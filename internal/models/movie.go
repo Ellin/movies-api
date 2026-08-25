@@ -25,5 +25,6 @@ type MovieDetail struct {
 type MovieFilter struct {
 	ReleaseYear *int
 	Genre       *int64
+	Actor       *int64
 	Pagination  pagination.Pagination
 }

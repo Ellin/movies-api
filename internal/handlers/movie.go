@@ -60,6 +60,16 @@ func parseFilters(query url.Values) (models.MovieFilter, error) {
 		filter.Genre = &genre
 	}
 
+	// Parse "actor"
+	if queryActor := query.Get("actor"); queryActor != "" {
+		actor, err := parseID(queryActor)
+		if err != nil {
+			return models.MovieFilter{}, errs.ErrInvalidUserInput
+		}
+
+		filter.Actor = &actor
+	}
+
 	// Parse pagination input
 	pagination, err := pagination.Parse(query)
 	if err != nil {
@@ -95,10 +105,15 @@ func (app *App) GetAllMovies(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	// Filter movies by release year
+
 	if filter.ReleaseYear != nil {
 		movies, err = app.MovieService.GetMoviesByYear(ctx, *filter.ReleaseYear)
 	} else if filter.Genre != nil {
 		movies, err = app.MovieService.GetMoviesByGenre(ctx, *filter.Genre)
+
+	} else if filter.Actor != nil {
+		movies, err = app.MovieService.GetMoviesByActor(ctx, *filter.Actor)
+
 	} else {
 		// Get all movies (no filters)
 		movies, err = app.MovieService.GetAllMovies(ctx, filter)
@@ -183,4 +198,24 @@ func (app *App) DeleteMovie(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *App) GetMovieActors(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	movieID, err := parseID(r.PathValue("id"))
+	if err != nil {
+		errs.WriteError(w, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err))
+		return
+	}
+
+	actors, err := app.MovieService.GetActorsByMovie(ctx, movieID)
+	if err != nil {
+		errs.WriteError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(actors)
 }

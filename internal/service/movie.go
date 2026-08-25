@@ -193,3 +193,18 @@ func (ms *MovieService) GetMoviesByGenre(ctx context.Context, genre int64) ([]mo
 
 	return movies, nil
 }
+
+func (ms *MovieService) GetMoviesByActor(ctx context.Context, actorID int64) ([]models.MovieDetail, error) {
+	if actorID < 1 {
+		return nil, fmt.Errorf("%w: actor ID must be positive", errs.ErrInvalidUserInput)
+	}
+
+	return ms.repo.GetMoviesByActor(ctx, actorID)
+}
+
+func (ms *MovieService) GetActorsByMovie(ctx context.Context, movieID int64) ([]models.ActorSummary, error) {
+	if movieID < 1 {
+		return nil, fmt.Errorf("%w: movie ID must be positive", errs.ErrInvalidUserInput)
+	}
+	return ms.repo.GetActorsByMovie(ctx, movieID)
+}
