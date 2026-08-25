@@ -78,8 +78,12 @@ func (ms *MovieService) GetMovie(ctx context.Context, id int64) (models.MovieDet
 	return movie, err
 }
 
-func (ms *MovieService) GetAllMovies(ctx context.Context) ([]models.MovieDetail, error) {
-	return ms.repo.GetAllMovies(ctx)
+func (ms *MovieService) GetAllMovies(ctx context.Context, filter models.MovieFilter) ([]models.MovieDetail, error) {
+	if err := filter.Pagination.Validate(); err != nil {
+		return nil, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+	}
+
+	return ms.repo.GetAllMovies(ctx, filter)
 }
 
 func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePatch) (models.MovieDetail, error) {

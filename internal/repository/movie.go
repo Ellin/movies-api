@@ -157,10 +157,11 @@ func (r *Repo) GetActorsByMovie(ctx context.Context, movieID int64) ([]models.Ac
 	return actors, nil
 }
 
-func (r *Repo) GetAllMovies(ctx context.Context) ([]models.MovieDetail, error) {
+func (r *Repo) GetAllMovies(ctx context.Context, filter models.MovieFilter) ([]models.MovieDetail, error) {
 	// Get all movies from movies table
-	query := `SELECT id, title, releaseYear, duration FROM movies ORDER BY id ASC;`
-	rows, err := r.DB.QueryContext(ctx, query)
+	query := `SELECT id, title, releaseYear, duration FROM movies ORDER BY id ASC
+	LIMIT ? OFFSET ?;`
+	rows, err := r.DB.QueryContext(ctx, query, filter.Pagination.Limit(), filter.Pagination.Offset())
 	if err != nil {
 		return nil, fmt.Errorf("error getting all movies: %w", err)
 	}
