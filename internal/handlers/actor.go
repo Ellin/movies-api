@@ -1,11 +1,8 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"log"
 	"movies-api/internal/errs"
 	"movies-api/internal/service"
 	"net/http"
@@ -24,11 +21,7 @@ func (app *App) PostActor(w http.ResponseWriter, r *http.Request) {
 
 	actor, err := app.ActorService.AddActor(ctx, sub)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			log.Println("client disconnected before add movie finished")
-		} else {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		}
+		errs.WriteError(w, err)
 		return
 	}
 
@@ -108,8 +101,8 @@ func (app *App) DeleteActor(w http.ResponseWriter, r *http.Request) {
 		errs.WriteError(w, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err))
 		return
 	}
-
-	if err := app.ActorService.DeleteActor(ctx, id); err != nil {
+	var force bool = r.URL.Query().Get("force") == "true"
+	if err := app.ActorService.DeleteActor(ctx, id, force); err != nil {
 		errs.WriteError(w, err)
 		return
 	}

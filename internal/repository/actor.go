@@ -282,8 +282,20 @@ func (r *Repo) updateMoviesActors(ctx context.Context, tx *sql.Tx, a models.Acto
 }
 
 // DeleteActor deletes the actor by ID (DELETE)
-func (r *Repo) DeleteActor(ctx context.Context, id int64) error {
+func (r *Repo) DeleteActor(ctx context.Context, id int64, force bool) error {
+	if !force {
+		var hasMovies bool
+		query := `SELECT EXISTS(SELECT 1 FROM movies_actors WHERE actor_id = ?);`
+		if err := r.DB.QueryRowContext(ctx, query, id).Scan(&hasMovies); err != nil {
+			return fmt.Errorf("checking actor relationships: %w", err)
+		}
+		if hasMovies {
+			return errs.ErrForce
+		}
+	}
+
 	query := `DELETE FROM actors WHERE id = ?;`
+	fmt.Println("here")
 
 	result, err := r.DB.ExecContext(ctx, query, id)
 	if err != nil {
@@ -294,10 +306,9 @@ func (r *Repo) DeleteActor(ctx context.Context, id int64) error {
 	if err != nil {
 		return fmt.Errorf("getting affected rows while deleting actor: %w", err)
 	}
-
+	fmt.Println(rows)
 	if rows == 0 {
 		return errs.ErrNotFound
 	}
-
 	return nil
 }

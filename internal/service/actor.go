@@ -193,7 +193,7 @@ func (as *ActorService) PatchActor(ctx context.Context, id int64, patch ActorPat
 	return as.repo.PatchActor(ctx, actor)
 }
 
-func (as *ActorService) DeleteActor(ctx context.Context, id int64) error {
+func (as *ActorService) DeleteActor(ctx context.Context, id int64, force bool) error {
 
 	if id < 1 {
 		return fmt.Errorf(
@@ -202,5 +202,5 @@ func (as *ActorService) DeleteActor(ctx context.Context, id int64) error {
 		)
 	}
 
-	return as.repo.DeleteActor(ctx, id)
+	return as.repo.DeleteActor(ctx, id, force)
 }
