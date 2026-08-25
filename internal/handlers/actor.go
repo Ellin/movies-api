@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"movies-api/internal/errs"
 	"movies-api/internal/models"
+	"movies-api/internal/pagination"
 	"movies-api/internal/service"
 	"net/http"
 	"strconv"
@@ -34,15 +35,18 @@ func (app *App) PostActor(w http.ResponseWriter, r *http.Request) {
 // get
 func (app *App) GetAllActors(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
+	query := r.URL.Query()
 	name := r.URL.Query().Get("name")
-
-	var actors []models.Actor
-	var err error
+	pagination, err := pagination.Parse(query)
+	if err != nil {
+		errs.WriteError(w, err)
+		return
+	}
+	var actors []models.ActorSummary
 	if name == "" {
-		actors, err = app.ActorService.GetAllActors(ctx)
+		actors, err = app.ActorService.GetAllActors(ctx, pagination)
 	} else {
-		actors, err = app.ActorService.GetAllActorsByName(ctx, name)
+		actors, err = app.ActorService.GetAllActorsByName(ctx, name, pagination)
 	}
 
 	if err != nil {
