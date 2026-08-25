@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"movies-api/internal/errs"
 	"movies-api/internal/models"
+	"movies-api/internal/pagination"
 )
 
 //CRUD for genres
@@ -55,29 +56,25 @@ func (r *Repo) GetGenre(ctx context.Context, id int64) (models.Genre, error) {
 }
 
 // READ 1.2
-func (r *Repo) GetAllGenres(ctx context.Context) ([]models.Genre, error) {
-	query := "SELECT id, name FROM genres ORDER BY name"
-	rows, err := r.DB.QueryContext(ctx, query)
+func (r *Repo) GetAllGenres(ctx context.Context, pag pagination.Pagination) ([]models.GenreSummary, error) {
+	query := "SELECT id, name FROM genres ORDER BY name ASC LIMIT ? OFFSET ?"
+	rows, err := r.DB.QueryContext(ctx, query, pag.Limit(), pag.Offset())
 	if err != nil {
 		return nil, fmt.Errorf("getting genres from genre table: %w", err)
 	}
 
 	defer rows.Close()
 
-	var genres []models.Genre
+	var genres []models.GenreSummary
 
 	for rows.Next() {
-		genre := models.Genre{}
+		genre := models.GenreSummary{}
 
 		err = rows.Scan(&genre.ID, &genre.Name)
 		if err != nil {
 			return nil, err
 		}
 
-		genre.MovieIDs, err = r.buildMovieIDslice(ctx, genre.ID)
-		if err != nil {
-			return nil, fmt.Errorf("getting movie IDs for genre: %w", err)
-		}
 		genres = append(genres, genre)
 	}
 
