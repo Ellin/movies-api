@@ -15,6 +15,7 @@ import (
 type MovieFilter struct {
 	releaseYear *int
 	genre       *int64
+	actor       *int64
 }
 
 func (app *App) PostMovie(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +65,15 @@ func parseFilters(query url.Values) (MovieFilter, error) {
 		filter.genre = &genre
 	}
 
+	if queryActor := query.Get("actor"); queryActor != "" {
+		actor, err := parseID(queryActor)
+		if err != nil {
+			return MovieFilter{}, errs.ErrInvalidUserInput
+		}
+
+		filter.actor = &actor
+	}
+
 	return filter, nil
 }
 
@@ -96,6 +106,8 @@ func (app *App) GetAllMovies(w http.ResponseWriter, r *http.Request) {
 		movies, err = app.MovieService.GetMoviesByYear(ctx, *filter.releaseYear)
 	} else if filter.genre != nil {
 		movies, err = app.MovieService.GetMoviesByGenre(ctx, *filter.genre)
+	} else if filter.actor != nil {
+		movies, err = app.MovieService.GetMoviesByActor(ctx, *filter.actor)
 	} else {
 		// Get all movies (no filters)
 		movies, err = app.MovieService.GetAllMovies(ctx)

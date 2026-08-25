@@ -446,3 +446,25 @@ func (r *Repo) GetMoviesByGenre(ctx context.Context, genre int64) ([]models.Movi
 
 	return movies, nil
 }
+
+func (r *Repo) GetMoviesByActor(ctx context.Context, actor int64) ([]models.MovieDetail, error) {
+	query := `SELECT m.id, m.title, m.releaseYear, m.duration
+			FROM movies m
+			JOIN movies_actors ma ON m.id = ma.movie_id
+			WHERE ma.actor_id = ?
+			ORDER BY m.id;
+			`
+
+	rows, err := r.DB.QueryContext(ctx, query, actor)
+	if err != nil {
+		return nil, fmt.Errorf("getting movies by actor: %w", err)
+	}
+	defer rows.Close()
+
+	movies, err := r.scanMoviesFromRows(ctx, rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return movies, nil
+}
