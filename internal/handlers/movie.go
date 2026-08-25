@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"movies-api/internal/errs"
 	"movies-api/internal/models"
+	"movies-api/internal/pagination"
 	"movies-api/internal/service"
 	"net/http"
 	"net/url"
@@ -35,7 +36,7 @@ func (app *App) PostMovie(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(movie)
 }
 
-// parseFilters parses filters from the query into models.MovieFilter
+// parseFilters parses all filter parameters from query values into models.MovieFilter
 func parseFilters(query url.Values) (models.MovieFilter, error) {
 	var filter models.MovieFilter
 
@@ -60,7 +61,7 @@ func parseFilters(query url.Values) (models.MovieFilter, error) {
 	}
 
 	// Parse pagination input
-	pagination, err := models.ParsePagination(query)
+	pagination, err := pagination.Parse(query)
 	if err != nil {
 		return models.MovieFilter{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}

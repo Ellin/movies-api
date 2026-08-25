@@ -1,5 +1,7 @@
 package models
 
+import "movies-api/internal/pagination"
+
 // movie structs
 type Movie struct {
 	ID          int64   `json:"id"`
@@ -23,5 +25,5 @@ type MovieDetail struct {
 type MovieFilter struct {
 	ReleaseYear *int
 	Genre       *int64
-	Pagination  Pagination
+	Pagination  pagination.Pagination
 }

@@ -1,4 +1,4 @@
-package models
+package pagination
 
 import (
 	"fmt"
@@ -11,27 +11,32 @@ type Pagination struct {
 	PageSize int
 }
 
+// Limit returns the number of results per page (i.e. page size).
 func (p *Pagination) Limit() int {
 	return p.PageSize
 }
 
+// Offset calculates how many entries to skip to reach the specified page.
+// The page numbering is 0-based.
 func (p *Pagination) Offset() int {
 	return p.Page * p.PageSize
 }
 
+// Validate enforces pagination parameter limits.
 func (p *Pagination) Validate() error {
 	if p.Page < 0 {
 		return fmt.Errorf("page must not be negative")
 	}
 
 	if p.PageSize < 1 || p.PageSize > 100 {
-		return fmt.Errorf("size must be an integer in range 1 - 100")
+		return fmt.Errorf("size must be in range 1 - 100")
 	}
 
 	return nil
 }
 
-func ParsePagination(query url.Values) (Pagination, error) {
+// Parse parses the pagination parameters from URL query values into a Pagination struct.
+func Parse(query url.Values) (Pagination, error) {
 	// Set default vaules
 	pagination := Pagination{
 		Page:     0,
