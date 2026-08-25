@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"movies-api/internal/errs"
 	"movies-api/internal/models"
+	"movies-api/internal/pagination"
 )
 
 // AddActor inserts a new actor into the actors table (CREATE)
@@ -84,30 +85,23 @@ func (r *Repo) GetActor(ctx context.Context, id int64) (models.Actor, error) {
 }
 
 // GetAllActors gets all actors data from the actors table (READ)
-func (r *Repo) GetAllActors(ctx context.Context) ([]models.Actor, error) {
-	actorMoviesMap, err := r.buildActorMovieIDsMap(ctx)
-	if err != nil {
-		return nil, err
-	}
+func (r *Repo) GetAllActors(ctx context.Context, pagination pagination.Pagination) ([]models.ActorSummary, error) {
+	query := `SELECT id, name FROM actors ORDER BY name ASC LIMIT ? OFFSET ?;`
 
-	query := `SELECT id, name, birth_date FROM actors ORDER BY id ASC;`
-
-	rows, err := r.DB.QueryContext(ctx, query)
+	rows, err := r.DB.QueryContext(ctx, query, pagination.Limit(), pagination.Offset())
 	if err != nil {
 		return nil, fmt.Errorf("getting all actors: %w", err)
 	}
 	defer rows.Close()
 
-	var actors []models.Actor
+	var actors []models.ActorSummary
 
 	for rows.Next() {
-		var actor models.Actor
+		var actor models.ActorSummary
 
-		if err := rows.Scan(&actor.ID, &actor.Name, &actor.BirthDate); err != nil {
+		if err := rows.Scan(&actor.ID, &actor.Name); err != nil {
 			return nil, fmt.Errorf("scanning actor row: %w", err)
 		}
-
-		actor.MovieIDs = actorMoviesMap[actor.ID]
 
 		actors = append(actors, actor)
 	}
@@ -119,27 +113,24 @@ func (r *Repo) GetAllActors(ctx context.Context) ([]models.Actor, error) {
 	return actors, nil
 }
 
-func (r *Repo) GetAllActorsByName(ctx context.Context, name string) ([]models.Actor, error) {
-	query := `SELECT id, name, birth_date FROM actors WHERE LOWER(name) LIKE LOWER(?) ORDER BY id ASC;`
-	rows, err := r.DB.QueryContext(ctx, query, "%"+name+"%")
+func (r *Repo) GetAllActorsByName(ctx context.Context, name string, pagination pagination.Pagination) ([]models.ActorSummary, error) {
+	query := `SELECT id, name FROM actors WHERE LOWER(name) LIKE LOWER(?) ORDER BY name ASC LIMIT ? OFFSET ?;`
+	rows, err := r.DB.QueryContext(ctx, query, "%"+name+"%", pagination.Limit(), pagination.Offset())
 	if err != nil {
 		return nil, fmt.Errorf("getting actors by name: %w", err)
 	}
 	defer rows.Close()
 
-	var actors []models.Actor
+	var actors []models.ActorSummary
 	for rows.Next() {
-		var actor models.Actor
+		var actor models.ActorSummary
 
 		if err := rows.Scan(
 			&actor.ID,
 			&actor.Name,
-			&actor.BirthDate,
 		); err != nil {
 			return nil, fmt.Errorf("scanning actor: %w", err)
 		}
-
-		actor.MovieIDs, err = r.getMovieIDsByActor(ctx, actor.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -150,39 +141,6 @@ func (r *Repo) GetAllActorsByName(ctx context.Context, name string) ([]models.Ac
 		return nil, fmt.Errorf("iterating actors: %w", err)
 	}
 	return actors, nil
-}
-
-// buildActorMoviesMap is a helper that creates a map where the key is the actor ID and value is all associated movies
-func (r *Repo) buildActorMovieIDsMap(ctx context.Context) (map[int64][]int64, error) {
-	query := `SELECT actor_id, movie_id	FROM movies_actors ORDER BY actor_id, movie_id;`
-
-	rows, err := r.DB.QueryContext(ctx, query)
-	if err != nil {
-		return nil, fmt.Errorf("getting actor-movie relationships: %w", err)
-	}
-	defer rows.Close()
-
-	actorMoviesMap := make(map[int64][]int64)
-
-	for rows.Next() {
-		var actorID int64
-		var movieID int64
-
-		if err := rows.Scan(&actorID, &movieID); err != nil {
-			return nil, fmt.Errorf("scanning actor-movie relationship: %w", err)
-		}
-
-		actorMoviesMap[actorID] = append(
-			actorMoviesMap[actorID],
-			movieID,
-		)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating actor-movie relationships: %w", err)
-	}
-
-	return actorMoviesMap, nil
 }
 
 // getMovieIDsByActor collects movie IDs that are associated with actor ID into slice

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"movies-api/internal/errs"
 	"movies-api/internal/models"
+	"movies-api/internal/pagination"
 	"movies-api/internal/repository"
 	"strings"
 	"time"
@@ -139,14 +140,14 @@ func (as *ActorService) GetActor(ctx context.Context, id int64) (models.Actor, e
 	return actor, err
 }
 
-func (as *ActorService) GetAllActors(ctx context.Context) ([]models.Actor, error) {
-	return as.repo.GetAllActors(ctx)
+func (as *ActorService) GetAllActors(ctx context.Context, pagination pagination.Pagination) ([]models.ActorSummary, error) {
+	return as.repo.GetAllActors(ctx, pagination)
 }
 
-func (as *ActorService) GetAllActorsByName(ctx context.Context, name string) ([]models.Actor, error) {
+func (as *ActorService) GetAllActorsByName(ctx context.Context, name string, pagination pagination.Pagination) ([]models.ActorSummary, error) {
 	name = strings.TrimSpace(name)
 	validateActorName(name)
-	return as.repo.GetAllActorsByName(ctx, name)
+	return as.repo.GetAllActorsByName(ctx, name, pagination)
 }
 
 func (as *ActorService) PatchActor(ctx context.Context, id int64, patch ActorPatch) (models.Actor, error) {
