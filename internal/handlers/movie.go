@@ -193,3 +193,23 @@ func (app *App) DeleteMovie(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (app *App) GetMovieActors(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	movieID, err := parseID(r.PathValue("id"))
+	if err != nil {
+		errs.WriteError(w, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err))
+		return
+	}
+
+	actors, err := app.MovieService.GetActorsByMovie(ctx, movieID)
+	if err != nil {
+		errs.WriteError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(actors)
+}

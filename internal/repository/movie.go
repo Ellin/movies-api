@@ -86,7 +86,7 @@ func (r *Repo) GetMovie(ctx context.Context, id int64) (models.MovieDetail, erro
 		return models.MovieDetail{}, err
 	}
 
-	m.Actors, err = r.getActorsByMovie(ctx, id)
+	m.Actors, err = r.GetActorsByMovie(ctx, id)
 	if err != nil {
 		return models.MovieDetail{}, err
 	}
@@ -127,7 +127,7 @@ func (r *Repo) getGenresByMovie(ctx context.Context, movieID int64) ([]models.Ge
 }
 
 // getActorsByMovie is a helper that retrieves all actors (with id and name) associated with a given movie ID
-func (r *Repo) getActorsByMovie(ctx context.Context, movieID int64) ([]models.ActorSummary, error) {
+func (r *Repo) GetActorsByMovie(ctx context.Context, movieID int64) ([]models.ActorSummary, error) {
 	// Get actor data associated with the given movie ID
 	query := `SELECT ma.actor_id, a.name
 	FROM movies_actors ma JOIN actors a ON ma.actor_id = a.id
