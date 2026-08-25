@@ -83,7 +83,28 @@ func (ms *MovieService) GetAllMovies(ctx context.Context, filter models.MovieFil
 		return nil, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
-	return ms.repo.GetAllMovies(ctx, filter)
+	if filter.ReleaseYear != nil {
+		if err := validateReleaseYear(*filter.ReleaseYear); err != nil {
+			return nil, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+		}
+	}
+
+	if filter.Actor != nil {
+		if *filter.Actor < 1 {
+			return nil, fmt.Errorf("%w: actor ID must be positive", errs.ErrInvalidUserInput)
+		}
+	}
+
+	if filter.Genre != nil {
+		if *filter.Genre < 1 {
+			return nil, fmt.Errorf("%w: genre ID must be positive", errs.ErrInvalidUserInput)
+		}
+	}
+
+	movies, err := ms.repo.GetAllMovies(ctx, filter)
+	fmt.Println(err)
+
+	return movies, err
 }
 
 func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePatch) (models.MovieDetail, error) {
@@ -156,19 +177,6 @@ func (ms *MovieService) DeleteMovie(ctx context.Context, id int64) error {
 	return err
 }
 
-func (ms *MovieService) GetMoviesByYear(ctx context.Context, year int) ([]models.MovieDetail, error) {
-	if err := validateReleaseYear(year); err != nil {
-		return nil, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
-	}
-
-	movies, err := ms.repo.GetMoviesByYear(ctx, year)
-	if err != nil {
-		return nil, err
-	}
-
-	return movies, nil
-}
-
 // validateReleaseYear checks that the movie's release year is between 1888 and the current year
 func validateReleaseYear(year int) error {
 	earliestMovie := 1888
@@ -182,24 +190,6 @@ func validateReleaseYear(year int) error {
 	}
 
 	return nil
-}
-
-func (ms *MovieService) GetMoviesByGenre(ctx context.Context, genre int64) ([]models.MovieDetail, error) {
-
-	movies, err := ms.repo.GetMoviesByGenre(ctx, genre)
-	if err != nil {
-		return nil, err
-	}
-
-	return movies, nil
-}
-
-func (ms *MovieService) GetMoviesByActor(ctx context.Context, actorID int64) ([]models.MovieDetail, error) {
-	if actorID < 1 {
-		return nil, fmt.Errorf("%w: actor ID must be positive", errs.ErrInvalidUserInput)
-	}
-
-	return ms.repo.GetMoviesByActor(ctx, actorID)
 }
 
 func (ms *MovieService) GetActorsByMovie(ctx context.Context, movieID int64) ([]models.ActorSummary, error) {
