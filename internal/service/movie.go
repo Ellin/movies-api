@@ -66,8 +66,6 @@ func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (mode
 	return movie, err
 }
 
-// You'll need functions to retrieve all movies, fetch a specific movie by ID, and filter movies by genre or release year.
-
 func (ms *MovieService) GetMovie(ctx context.Context, id int64) (models.MovieDetail, error) {
 	if id < 1 {
 		return models.MovieDetail{}, errors.New("id must be positive")
@@ -78,33 +76,42 @@ func (ms *MovieService) GetMovie(ctx context.Context, id int64) (models.MovieDet
 	return movie, err
 }
 
+// GetAllMovies gets all movies according to the provided query parameters. Result is paginated with 0-based page numbering.
 func (ms *MovieService) GetAllMovies(ctx context.Context, filter models.MovieFilter) ([]models.MovieDetail, error) {
-	if err := filter.Pagination.Validate(); err != nil {
+	if err := ms.validateFilter(filter); err != nil {
 		return nil, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+	}
+
+	movies, err := ms.repo.GetAllMovies(ctx, filter)
+
+	return movies, err
+}
+
+// validateFilter is a helper that validates all query parameters
+func (ms *MovieService) validateFilter(filter models.MovieFilter) error {
+	if err := filter.Pagination.Validate(); err != nil {
+		return err
 	}
 
 	if filter.ReleaseYear != nil {
 		if err := validateReleaseYear(*filter.ReleaseYear); err != nil {
-			return nil, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+			return err
 		}
 	}
 
 	if filter.Actor != nil {
 		if *filter.Actor < 1 {
-			return nil, fmt.Errorf("%w: actor ID must be positive", errs.ErrInvalidUserInput)
+			return fmt.Errorf("actor ID must be positive")
 		}
 	}
 
 	if filter.Genre != nil {
 		if *filter.Genre < 1 {
-			return nil, fmt.Errorf("%w: genre ID must be positive", errs.ErrInvalidUserInput)
+			return fmt.Errorf("genre ID must be positive")
 		}
 	}
 
-	movies, err := ms.repo.GetAllMovies(ctx, filter)
-	fmt.Println(err)
-
-	return movies, err
+	return nil
 }
 
 func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePatch) (models.MovieDetail, error) {

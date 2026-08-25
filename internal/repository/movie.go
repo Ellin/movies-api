@@ -158,9 +158,9 @@ func (r *Repo) GetActorsByMovie(ctx context.Context, movieID int64) ([]models.Ac
 	return actors, nil
 }
 
+// GetAllMovies gets all movies according to the provided query parameters. Result is paginated with 0-based page numbering.
 func (r *Repo) GetAllMovies(ctx context.Context, filter models.MovieFilter) ([]models.MovieDetail, error) {
 	query, args := createQueryFromFilters(filter)
-	fmt.Println(query)
 
 	rows, err := r.DB.QueryContext(ctx, query, args...)
 	if err != nil {
