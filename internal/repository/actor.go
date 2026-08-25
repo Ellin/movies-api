@@ -63,24 +63,15 @@ func (r *Repo) AddActor(ctx context.Context, a models.Actor) (models.Actor, erro
 
 // GetActor gets actor data from the actors table (READ)
 func (r *Repo) GetActor(ctx context.Context, id int64) (models.Actor, error) {
-	query := `
-		SELECT id, name, birth_date
-		FROM actors
-		WHERE id = ?;
-	`
+	query := `SELECT id, name, birth_date FROM actors WHERE id = ?;`
 
 	var actor models.Actor
 
-	err := r.DB.QueryRowContext(ctx, query, id).Scan(
-		&actor.ID,
-		&actor.Name,
-		&actor.BirthDate,
-	)
+	err := r.DB.QueryRowContext(ctx, query, id).Scan(&actor.ID, &actor.Name, &actor.BirthDate)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return models.Actor{}, errs.ErrNotFound
 		}
-
 		return models.Actor{}, fmt.Errorf("getting actor: %w", err)
 	}
 

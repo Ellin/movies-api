@@ -135,8 +135,8 @@ func (as *ActorService) GetActor(ctx context.Context, id int64) (models.Actor, e
 			errs.ErrInvalidUserInput,
 		)
 	}
-
-	return as.repo.GetActor(ctx, id)
+	actor, err := as.repo.GetActor(ctx, id)
+	return actor, err
 }
 
 func (as *ActorService) GetAllActors(ctx context.Context) ([]models.Actor, error) {
