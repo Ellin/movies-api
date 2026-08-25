@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"movies-api/internal/errs"
+	"movies-api/internal/models"
 	"movies-api/internal/service"
 	"net/http"
 	"strconv"
@@ -34,7 +35,16 @@ func (app *App) PostActor(w http.ResponseWriter, r *http.Request) {
 func (app *App) GetAllActors(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	actors, err := app.ActorService.GetAllActors(ctx)
+	name := r.URL.Query().Get("name")
+
+	var actors []models.Actor
+	var err error
+	if name == "" {
+		actors, err = app.ActorService.GetAllActors(ctx)
+	} else {
+		actors, err = app.ActorService.GetAllActorsByName(ctx, name)
+	}
+
 	if err != nil {
 		errs.WriteError(w, err)
 		return

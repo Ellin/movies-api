@@ -83,17 +83,14 @@ func (r *Repo) GetActor(ctx context.Context, id int64) (models.Actor, error) {
 	return actor, nil
 }
 
+// GetAllActors gets all actors data from the actors table (READ)
 func (r *Repo) GetAllActors(ctx context.Context) ([]models.Actor, error) {
 	actorMoviesMap, err := r.buildActorMovieIDsMap(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	query := `
-		SELECT id, name, birth_date
-		FROM actors
-		ORDER BY id ASC;
-	`
+	query := `SELECT id, name, birth_date FROM actors ORDER BY id ASC;`
 
 	rows, err := r.DB.QueryContext(ctx, query)
 	if err != nil {
@@ -106,11 +103,7 @@ func (r *Repo) GetAllActors(ctx context.Context) ([]models.Actor, error) {
 	for rows.Next() {
 		var actor models.Actor
 
-		if err := rows.Scan(
-			&actor.ID,
-			&actor.Name,
-			&actor.BirthDate,
-		); err != nil {
+		if err := rows.Scan(&actor.ID, &actor.Name, &actor.BirthDate); err != nil {
 			return nil, fmt.Errorf("scanning actor row: %w", err)
 		}
 
@@ -126,13 +119,42 @@ func (r *Repo) GetAllActors(ctx context.Context) ([]models.Actor, error) {
 	return actors, nil
 }
 
+func (r *Repo) GetAllActorsByName(ctx context.Context, name string) ([]models.Actor, error) {
+	query := `SELECT id, name, birth_date FROM actors WHERE LOWER(name) LIKE LOWER(?) ORDER BY id ASC;`
+	rows, err := r.DB.QueryContext(ctx, query, "%"+name+"%")
+	if err != nil {
+		return nil, fmt.Errorf("getting actors by name: %w", err)
+	}
+	defer rows.Close()
+
+	var actors []models.Actor
+	for rows.Next() {
+		var actor models.Actor
+
+		if err := rows.Scan(
+			&actor.ID,
+			&actor.Name,
+			&actor.BirthDate,
+		); err != nil {
+			return nil, fmt.Errorf("scanning actor: %w", err)
+		}
+
+		actor.MovieIDs, err = r.getMovieIDsByActor(ctx, actor.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		actors = append(actors, actor)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating actors: %w", err)
+	}
+	return actors, nil
+}
+
 // buildActorMoviesMap is a helper that creates a map where the key is the actor ID and value is all associated movies
 func (r *Repo) buildActorMovieIDsMap(ctx context.Context) (map[int64][]int64, error) {
-	query := `
-		SELECT actor_id, movie_id
-		FROM movies_actors
-		ORDER BY actor_id, movie_id;
-	`
+	query := `SELECT actor_id, movie_id	FROM movies_actors ORDER BY actor_id, movie_id;`
 
 	rows, err := r.DB.QueryContext(ctx, query)
 	if err != nil {
@@ -165,12 +187,7 @@ func (r *Repo) buildActorMovieIDsMap(ctx context.Context) (map[int64][]int64, er
 
 // getMovieIDsByActor collects movie IDs that are associated with actor ID into slice
 func (r *Repo) getMovieIDsByActor(ctx context.Context, actorID int64) ([]int64, error) {
-	query := `
-		SELECT movie_id
-		FROM movies_actors
-		WHERE actor_id = ?
-		ORDER BY movie_id;
-	`
+	query := `SELECT movie_id FROM movies_actors WHERE actor_id = ? ORDER BY movie_id;`
 
 	rows, err := r.DB.QueryContext(ctx, query, actorID)
 	if err != nil {
@@ -226,10 +243,7 @@ func (r *Repo) PatchActor(ctx context.Context, a models.Actor) (models.Actor, er
 
 // updateActor is a helper that updates the actors table with matching ID
 func (r *Repo) updateActor(ctx context.Context, tx *sql.Tx, a models.Actor) error {
-	// Update actors table
-	query := `UPDATE actors
-	SET name = ?, birth_date = ?
-	WHERE id = ?;`
+	query := `UPDATE actors	SET name = ?, birth_date = ? WHERE id = ?;`
 
 	result, err := tx.ExecContext(ctx, query, a.Name, a.BirthDate, a.ID)
 	if err != nil {
@@ -293,20 +307,15 @@ func (r *Repo) DeleteActor(ctx context.Context, id int64, force bool) error {
 			return errs.ErrForce
 		}
 	}
-
 	query := `DELETE FROM actors WHERE id = ?;`
-	fmt.Println("here")
-
 	result, err := r.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("deleting actor: %w", err)
 	}
-
 	rows, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("getting affected rows while deleting actor: %w", err)
 	}
-	fmt.Println(rows)
 	if rows == 0 {
 		return errs.ErrNotFound
 	}

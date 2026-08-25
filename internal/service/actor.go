@@ -143,6 +143,12 @@ func (as *ActorService) GetAllActors(ctx context.Context) ([]models.Actor, error
 	return as.repo.GetAllActors(ctx)
 }
 
+func (as *ActorService) GetAllActorsByName(ctx context.Context, name string) ([]models.Actor, error) {
+	name = strings.TrimSpace(name)
+	validateActorName(name)
+	return as.repo.GetAllActorsByName(ctx, name)
+}
+
 func (as *ActorService) PatchActor(ctx context.Context, id int64, patch ActorPatch) (models.Actor, error) {
 	// Struct level validation
 	if err := as.validate.Struct(patch); err != nil {
