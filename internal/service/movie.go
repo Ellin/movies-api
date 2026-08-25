@@ -40,15 +40,15 @@ func NewMovieService(r *repository.Repo, v *validator.Validate) *MovieService {
 }
 
 // For movies, your service should allow adding new movies with their title, release year, duration, associated genre, and actors.
-func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (models.Movie, error) {
+func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (models.MovieDetail, error) {
 	// Struct level validation
 	if err := ms.validate.Struct(sub); err != nil {
-		return models.Movie{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+		return models.MovieDetail{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
 	// Business level validations
 	if err := validateReleaseYear(sub.ReleaseYear); err != nil {
-		return models.Movie{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+		return models.MovieDetail{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
 	newMovie := models.Movie{
@@ -82,16 +82,16 @@ func (ms *MovieService) GetAllMovies(ctx context.Context) ([]models.MovieDetail,
 	return ms.repo.GetAllMovies(ctx)
 }
 
-func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePatch) (models.Movie, error) {
+func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePatch) (models.MovieDetail, error) {
 	// Struct level validation
 	if err := ms.validate.Struct(patch); err != nil {
-		return models.Movie{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+		return models.MovieDetail{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
 	// First get existing movie
 	movieDetail, err := ms.GetMovie(ctx, id)
 	if err != nil {
-		return models.Movie{}, err
+		return models.MovieDetail{}, err
 	}
 
 	movie := stripMovieDetails(movieDetail)
@@ -104,7 +104,7 @@ func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePat
 	if patch.ReleaseYear != nil {
 		//  Validate release year
 		if err := validateReleaseYear(*patch.ReleaseYear); err != nil {
-			return models.Movie{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+			return models.MovieDetail{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 		}
 		movie.ReleaseYear = *patch.ReleaseYear
 	}
@@ -122,12 +122,7 @@ func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePat
 	}
 
 	// Update database with updated movie
-	movie, err = ms.repo.PatchMovie(ctx, movie)
-	if err != nil {
-		return models.Movie{}, err
-	}
-
-	return movie, nil
+	return ms.repo.PatchMovie(ctx, movie)
 }
 
 // stripMovieDetails converts a MovieDetail object to Movie (removing genre and actor names)
