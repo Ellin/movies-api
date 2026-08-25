@@ -135,12 +135,18 @@ func (as *ActorService) GetActor(ctx context.Context, id int64) (models.Actor, e
 			errs.ErrInvalidUserInput,
 		)
 	}
-
-	return as.repo.GetActor(ctx, id)
+	actor, err := as.repo.GetActor(ctx, id)
+	return actor, err
 }
 
 func (as *ActorService) GetAllActors(ctx context.Context) ([]models.Actor, error) {
 	return as.repo.GetAllActors(ctx)
+}
+
+func (as *ActorService) GetAllActorsByName(ctx context.Context, name string) ([]models.Actor, error) {
+	name = strings.TrimSpace(name)
+	validateActorName(name)
+	return as.repo.GetAllActorsByName(ctx, name)
 }
 
 func (as *ActorService) PatchActor(ctx context.Context, id int64, patch ActorPatch) (models.Actor, error) {
@@ -193,7 +199,7 @@ func (as *ActorService) PatchActor(ctx context.Context, id int64, patch ActorPat
 	return as.repo.PatchActor(ctx, actor)
 }
 
-func (as *ActorService) DeleteActor(ctx context.Context, id int64) error {
+func (as *ActorService) DeleteActor(ctx context.Context, id int64, force bool) error {
 
 	if id < 1 {
 		return fmt.Errorf(
@@ -202,5 +208,5 @@ func (as *ActorService) DeleteActor(ctx context.Context, id int64) error {
 		)
 	}
 
-	return as.repo.DeleteActor(ctx, id)
+	return as.repo.DeleteActor(ctx, id, force)
 }
