@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"movies-api/internal/errs"
 	"movies-api/internal/models"
+	"movies-api/internal/pagination"
 	"movies-api/internal/repository"
 
 	"github.com/go-playground/validator/v10"
@@ -49,8 +50,11 @@ func (gs *GenreService) AddGenre(ctx context.Context, sub GenreSubmission) (mode
 	return g, err
 }
 
-func (gs *GenreService) GetAllGenres(ctx context.Context) ([]models.Genre, error) {
-	return gs.repo.GetAllGenres(ctx)
+func (gs *GenreService) GetAllGenres(ctx context.Context, pag pagination.Pagination) ([]models.GenreSummary, error) {
+	if err := pag.Validate(); err != nil {
+		return nil, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+	}
+	return gs.repo.GetAllGenres(ctx, pag)
 }
 
 func (gs *GenreService) GetGenre(ctx context.Context, id int64) (models.Genre, error) {

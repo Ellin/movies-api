@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"movies-api/internal/errs"
+	"movies-api/internal/pagination"
 	"movies-api/internal/service"
 	"net/http"
 )
@@ -36,7 +37,13 @@ func (app *App) PostGenre(w http.ResponseWriter, r *http.Request) {
 func (app *App) GetAllGenres(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	genres, err := app.GenreService.GetAllGenres(ctx)
+	pagination, err := pagination.Parse(r.URL.Query())
+	if err != nil {
+		errs.WriteError(w, err)
+		return
+	}
+
+	genres, err := app.GenreService.GetAllGenres(ctx, pagination)
 	if err != nil {
 		errs.WriteError(w, err)
 		return
