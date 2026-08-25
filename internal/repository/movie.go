@@ -86,7 +86,7 @@ func (r *Repo) GetMovie(ctx context.Context, id int64) (models.MovieDetail, erro
 		return models.MovieDetail{}, err
 	}
 
-	m.Actors, err = r.getActorsByMovie(ctx, id)
+	m.Actors, err = r.GetActorsByMovie(ctx, id)
 	if err != nil {
 		return models.MovieDetail{}, err
 	}
@@ -127,7 +127,7 @@ func (r *Repo) getGenresByMovie(ctx context.Context, movieID int64) ([]models.Ge
 }
 
 // getActorsByMovie is a helper that retrieves all actors (with id and name) associated with a given movie ID
-func (r *Repo) getActorsByMovie(ctx context.Context, movieID int64) ([]models.ActorSummary, error) {
+func (r *Repo) GetActorsByMovie(ctx context.Context, movieID int64) ([]models.ActorSummary, error) {
 	// Get actor data associated with the given movie ID
 	query := `SELECT ma.actor_id, a.name
 	FROM movies_actors ma JOIN actors a ON ma.actor_id = a.id
@@ -436,6 +436,28 @@ func (r *Repo) GetMoviesByGenre(ctx context.Context, genre int64) ([]models.Movi
 	rows, err := r.DB.QueryContext(ctx, query, genre)
 	if err != nil {
 		return nil, err
+	}
+	defer rows.Close()
+
+	movies, err := r.scanMoviesFromRows(ctx, rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return movies, nil
+}
+
+func (r *Repo) GetMoviesByActor(ctx context.Context, actor int64) ([]models.MovieDetail, error) {
+	query := `SELECT m.id, m.title, m.releaseYear, m.duration
+			FROM movies m
+			JOIN movies_actors ma ON m.id = ma.movie_id
+			WHERE ma.actor_id = ?
+			ORDER BY m.id;
+			`
+
+	rows, err := r.DB.QueryContext(ctx, query, actor)
+	if err != nil {
+		return nil, fmt.Errorf("getting movies by actor: %w", err)
 	}
 	defer rows.Close()
 

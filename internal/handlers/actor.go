@@ -1,11 +1,10 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
-	"log"
+	"fmt"
 	"movies-api/internal/errs"
+	"movies-api/internal/models"
 	"movies-api/internal/service"
 	"net/http"
 	"strconv"
@@ -23,11 +22,7 @@ func (app *App) PostActor(w http.ResponseWriter, r *http.Request) {
 
 	actor, err := app.ActorService.AddActor(ctx, sub)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			log.Println("client disconnected before add movie finished")
-		} else {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		}
+		errs.WriteError(w, err)
 		return
 	}
 
@@ -40,17 +35,23 @@ func (app *App) PostActor(w http.ResponseWriter, r *http.Request) {
 func (app *App) GetAllActors(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	actors, err := app.ActorService.GetAllActors(ctx)
+	name := r.URL.Query().Get("name")
+
+	var actors []models.Actor
+	var err error
+	if name == "" {
+		actors, err = app.ActorService.GetAllActors(ctx)
+	} else {
+		actors, err = app.ActorService.GetAllActorsByName(ctx, name)
+	}
+
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			log.Println("client disconnected before get actor finished")
-		} else {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		}
+		errs.WriteError(w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(actors)
 }
 
@@ -60,24 +61,19 @@ func (app *App) GetActor(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || id < 1 {
-		http.NotFound(w, r)
+		errs.WriteError(w, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err))
 		return
 	}
 
-	actors, err := app.ActorService.GetActor(ctx, id)
+	actor, err := app.ActorService.GetActor(ctx, id)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			log.Println("client disconnected before get movie finished")
-		} else if errors.Is(err, errs.ErrNotFound) {
-			http.NotFound(w, r)
-		} else {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		}
+		errs.WriteError(w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(actors)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(actor)
 }
 
 func (app *App) PatchActor(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +81,7 @@ func (app *App) PatchActor(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || id < 1 {
-		http.NotFound(w, r)
+		errs.WriteError(w, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err))
 		return
 	}
 
@@ -98,13 +94,7 @@ func (app *App) PatchActor(w http.ResponseWriter, r *http.Request) {
 
 	actor, err := app.ActorService.PatchActor(ctx, id, patch)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			log.Println("client disconnected before add movie finished")
-		} else {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-
-			// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		}
+		errs.WriteError(w, err)
 		return
 	}
 
@@ -118,18 +108,12 @@ func (app *App) DeleteActor(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || id < 1 {
-		http.NotFound(w, r)
+		errs.WriteError(w, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err))
 		return
 	}
-
-	if err := app.ActorService.DeleteActor(ctx, id); err != nil {
-		if errors.Is(err, context.Canceled) {
-			log.Println("client disconnected before get movie finished")
-		} else if errors.Is(err, errs.ErrNotFound) {
-			http.NotFound(w, r)
-		} else {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		}
+	var force bool = r.URL.Query().Get("force") == "true"
+	if err := app.ActorService.DeleteActor(ctx, id, force); err != nil {
+		errs.WriteError(w, err)
 		return
 	}
 
