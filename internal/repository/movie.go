@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"movies-api/internal/errs"
 	"movies-api/internal/models"
+	"strings"
 )
 
 // AddMovie inserts a new movie into the movies table (CREATE)
@@ -157,11 +158,11 @@ func (r *Repo) GetActorsByMovie(ctx context.Context, movieID int64) ([]models.Ac
 	return actors, nil
 }
 
+// GetAllMovies gets all movies according to the provided query parameters. Result is paginated with 0-based page numbering.
 func (r *Repo) GetAllMovies(ctx context.Context, filter models.MovieFilter) ([]models.MovieDetail, error) {
-	// Get all movies from movies table
-	query := `SELECT id, title, releaseYear, duration FROM movies ORDER BY id ASC
-	LIMIT ? OFFSET ?;`
-	rows, err := r.DB.QueryContext(ctx, query, filter.Pagination.Limit(), filter.Pagination.Offset())
+	query, args := createQueryFromFilters(filter)
+
+	rows, err := r.DB.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all movies: %w", err)
 	}
@@ -173,6 +174,49 @@ func (r *Repo) GetAllMovies(ctx context.Context, filter models.MovieFilter) ([]m
 	}
 
 	return allMovies, nil
+}
+
+// createQueryFromFilters is a helper that constructs a query string for from MovieFilter. Returns the query and arguments for query execution.
+func createQueryFromFilters(filter models.MovieFilter) (query string, args []any) {
+	// Base query for getting movies from movies table
+	query = `SELECT m.id, m.title, m.releaseYear, m.duration FROM movies m`
+
+	var joins []string  // JOIN statement parts
+	var wheres []string // WHERE statement parts
+
+	// Check filters and collect JOIN, WHERE, and argument parts for building query statement
+	if filter.Genre != nil {
+		joins = append(joins, "JOIN genres_movies gm ON m.id = gm.movie_id")
+		wheres = append(wheres, "gm.genre_id = ?")
+		args = append(args, filter.Genre)
+	}
+
+	if filter.Actor != nil {
+		joins = append(joins, "JOIN movies_actors ma ON m.id = ma.movie_id")
+		wheres = append(wheres, "ma.actor_id = ?")
+		args = append(args, filter.Actor)
+	}
+
+	if filter.ReleaseYear != nil {
+		wheres = append(wheres, "m.releaseYear = ?")
+		args = append(args, filter.ReleaseYear)
+	}
+
+	// Construct and add the JOIN statements to query
+	if len(joins) > 0 {
+		query = query + " " + strings.Join(joins, " ")
+	}
+
+	// Construct and add the WHERE statement to query
+	if len(wheres) > 0 {
+		query += " WHERE " + strings.Join(wheres, " AND ")
+	}
+
+	// Finalize query with order and pagination
+	query += " ORDER BY m.id ASC LIMIT ? OFFSET ?;"
+	args = append(args, filter.Pagination.Limit(), filter.Pagination.Offset())
+
+	return query, args
 }
 
 // scanMoviesFromRows is a helper that scans rows selected from the movies table and returns []models.MovieDetail
@@ -408,64 +452,4 @@ func (r *Repo) DeleteMovie(ctx context.Context, id int64) error {
 	}
 
 	return nil
-}
-
-// GetMoviesByYear gets all movies that match the given release year
-func (r *Repo) GetMoviesByYear(ctx context.Context, year int) ([]models.MovieDetail, error) {
-	query := `SELECT id, title, releaseYear, duration FROM movies
-	WHERE releaseYear = ? ORDER BY id;`
-
-	rows, err := r.DB.QueryContext(ctx, query, year)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	movies, err := r.scanMoviesFromRows(ctx, rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return movies, nil
-}
-
-func (r *Repo) GetMoviesByGenre(ctx context.Context, genre int64) ([]models.MovieDetail, error) {
-	query := `SELECT movies.id, movies.title, movies.releaseYear, movies.duration
-	FROM movies JOIN genres_movies ON movies.id = genres_movies.movie_id
-	WHERE genres_movies.genre_id = ?`
-
-	rows, err := r.DB.QueryContext(ctx, query, genre)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	movies, err := r.scanMoviesFromRows(ctx, rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return movies, nil
-}
-
-func (r *Repo) GetMoviesByActor(ctx context.Context, actor int64) ([]models.MovieDetail, error) {
-	query := `SELECT m.id, m.title, m.releaseYear, m.duration
-			FROM movies m
-			JOIN movies_actors ma ON m.id = ma.movie_id
-			WHERE ma.actor_id = ?
-			ORDER BY m.id;
-			`
-
-	rows, err := r.DB.QueryContext(ctx, query, actor)
-	if err != nil {
-		return nil, fmt.Errorf("getting movies by actor: %w", err)
-	}
-	defer rows.Close()
-
-	movies, err := r.scanMoviesFromRows(ctx, rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return movies, nil
 }

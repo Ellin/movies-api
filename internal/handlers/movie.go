@@ -104,20 +104,7 @@ func (app *App) GetAllMovies(w http.ResponseWriter, r *http.Request) {
 	var movies []models.MovieDetail
 	var err error
 
-	// Filter movies by release year
-
-	if filter.ReleaseYear != nil {
-		movies, err = app.MovieService.GetMoviesByYear(ctx, *filter.ReleaseYear)
-	} else if filter.Genre != nil {
-		movies, err = app.MovieService.GetMoviesByGenre(ctx, *filter.Genre)
-
-	} else if filter.Actor != nil {
-		movies, err = app.MovieService.GetMoviesByActor(ctx, *filter.Actor)
-
-	} else {
-		// Get all movies (no filters)
-		movies, err = app.MovieService.GetAllMovies(ctx, filter)
-	}
+	movies, err = app.MovieService.GetAllMovies(ctx, filter)
 
 	if err != nil {
 		errs.WriteError(w, err)

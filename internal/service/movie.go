@@ -66,8 +66,6 @@ func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (mode
 	return movie, err
 }
 
-// You'll need functions to retrieve all movies, fetch a specific movie by ID, and filter movies by genre or release year.
-
 func (ms *MovieService) GetMovie(ctx context.Context, id int64) (models.MovieDetail, error) {
 	if id < 1 {
 		return models.MovieDetail{}, errors.New("id must be positive")
@@ -78,12 +76,42 @@ func (ms *MovieService) GetMovie(ctx context.Context, id int64) (models.MovieDet
 	return movie, err
 }
 
+// GetAllMovies gets all movies according to the provided query parameters. Result is paginated with 0-based page numbering.
 func (ms *MovieService) GetAllMovies(ctx context.Context, filter models.MovieFilter) ([]models.MovieDetail, error) {
-	if err := filter.Pagination.Validate(); err != nil {
+	if err := ms.validateFilter(filter); err != nil {
 		return nil, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
-	return ms.repo.GetAllMovies(ctx, filter)
+	movies, err := ms.repo.GetAllMovies(ctx, filter)
+
+	return movies, err
+}
+
+// validateFilter is a helper that validates all query parameters
+func (ms *MovieService) validateFilter(filter models.MovieFilter) error {
+	if err := filter.Pagination.Validate(); err != nil {
+		return err
+	}
+
+	if filter.ReleaseYear != nil {
+		if err := validateReleaseYear(*filter.ReleaseYear); err != nil {
+			return err
+		}
+	}
+
+	if filter.Actor != nil {
+		if *filter.Actor < 1 {
+			return fmt.Errorf("actor ID must be positive")
+		}
+	}
+
+	if filter.Genre != nil {
+		if *filter.Genre < 1 {
+			return fmt.Errorf("genre ID must be positive")
+		}
+	}
+
+	return nil
 }
 
 func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePatch) (models.MovieDetail, error) {
@@ -156,19 +184,6 @@ func (ms *MovieService) DeleteMovie(ctx context.Context, id int64) error {
 	return err
 }
 
-func (ms *MovieService) GetMoviesByYear(ctx context.Context, year int) ([]models.MovieDetail, error) {
-	if err := validateReleaseYear(year); err != nil {
-		return nil, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
-	}
-
-	movies, err := ms.repo.GetMoviesByYear(ctx, year)
-	if err != nil {
-		return nil, err
-	}
-
-	return movies, nil
-}
-
 // validateReleaseYear checks that the movie's release year is between 1888 and the current year
 func validateReleaseYear(year int) error {
 	earliestMovie := 1888
@@ -182,24 +197,6 @@ func validateReleaseYear(year int) error {
 	}
 
 	return nil
-}
-
-func (ms *MovieService) GetMoviesByGenre(ctx context.Context, genre int64) ([]models.MovieDetail, error) {
-
-	movies, err := ms.repo.GetMoviesByGenre(ctx, genre)
-	if err != nil {
-		return nil, err
-	}
-
-	return movies, nil
-}
-
-func (ms *MovieService) GetMoviesByActor(ctx context.Context, actorID int64) ([]models.MovieDetail, error) {
-	if actorID < 1 {
-		return nil, fmt.Errorf("%w: actor ID must be positive", errs.ErrInvalidUserInput)
-	}
-
-	return ms.repo.GetMoviesByActor(ctx, actorID)
 }
 
 func (ms *MovieService) GetActorsByMovie(ctx context.Context, movieID int64) ([]models.ActorSummary, error) {
