@@ -158,28 +158,29 @@ func (r *Repo) GetActorsByMovie(ctx context.Context, movieID int64) ([]models.Ac
 	return actors, nil
 }
 
-// GetAllMovies gets all movies according to the provided query parameters. Result is paginated with 0-based page numbering.
-func (r *Repo) GetAllMovies(ctx context.Context, filter models.MovieFilter) ([]models.MovieDetail, error) {
+// GetAllMovies returns movies matching filter's criteria, restricted to the pagination parameters.
+// Also returns the total number of matching movies across all pages.
+func (r *Repo) GetAllMovies(ctx context.Context, filter models.MovieFilter) ([]models.MovieDetail, int, error) {
 	query, args := createQueryFromFilters(filter)
 
 	rows, err := r.DB.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("error getting all movies: %w", err)
+		return nil, 0, fmt.Errorf("error getting all movies: %w", err)
 	}
 	defer rows.Close()
 
-	allMovies, err := r.scanMoviesFromRows(ctx, rows)
+	allMovies, totalCount, err := r.scanMoviesFromRows(ctx, rows)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return allMovies, nil
+	return allMovies, totalCount, nil
 }
 
 // createQueryFromFilters is a helper that constructs a query string for from MovieFilter. Returns the query and arguments for query execution.
 func createQueryFromFilters(filter models.MovieFilter) (query string, args []any) {
 	// Base query for getting movies from movies table
-	query = `SELECT m.id, m.title, m.releaseYear, m.duration FROM movies m`
+	query = `SELECT COUNT(*) OVER() AS total_count, m.id, m.title, m.releaseYear, m.duration FROM movies m`
 
 	var joins []string  // JOIN statement parts
 	var wheres []string // WHERE statement parts
@@ -220,27 +221,28 @@ func createQueryFromFilters(filter models.MovieFilter) (query string, args []any
 }
 
 // scanMoviesFromRows is a helper that scans rows selected from the movies table and returns []models.MovieDetail
-func (r *Repo) scanMoviesFromRows(ctx context.Context, rows *sql.Rows) ([]models.MovieDetail, error) {
+func (r *Repo) scanMoviesFromRows(ctx context.Context, rows *sql.Rows) ([]models.MovieDetail, int, error) {
 	// make movie-genres map with movie id as key
 	movieGenresMap, err := r.buildMovieGenresMap(ctx)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	// make movie-actors map with movie id as key
 	movieActorsMap, err := r.buildMovieActorsMap(ctx)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var movies []models.MovieDetail
+	var totalCount int
 
 	// Scan rows and add each movie to movies
 	for rows.Next() {
 		var m models.MovieDetail
-		err := rows.Scan(&m.ID, &m.Title, &m.ReleaseYear, &m.Duration)
+		err := rows.Scan(&totalCount, &m.ID, &m.Title, &m.ReleaseYear, &m.Duration)
 		if err != nil {
-			return nil, fmt.Errorf("scanning movie row: %w", err)
+			return nil, 0, fmt.Errorf("scanning movie row: %w", err)
 		}
 
 		m.Genres = movieGenresMap[m.ID]
@@ -251,10 +253,10 @@ func (r *Repo) scanMoviesFromRows(ctx context.Context, rows *sql.Rows) ([]models
 
 	// Check if rows.Next() loop stopped due to error
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating movie rows while getting all movies: %w", err)
+		return nil, 0, fmt.Errorf("iterating movie rows while getting all movies: %w", err)
 	}
 
-	return movies, nil
+	return movies, totalCount, nil
 }
 
 // buildMovieGenresMap is a helper that creates a map where the key is the movie ID and value is all associated genres
