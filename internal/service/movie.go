@@ -76,15 +76,14 @@ func (ms *MovieService) GetMovie(ctx context.Context, id int64) (models.MovieDet
 	return movie, err
 }
 
-// GetAllMovies gets all movies according to the provided query parameters. Result is paginated with 0-based page numbering.
-func (ms *MovieService) GetAllMovies(ctx context.Context, filter models.MovieFilter) ([]models.MovieDetail, error) {
+// GetAllMovies returns movies matching filter's criteria, restricted to the pagination parameters.
+// Also returns the total number of matching movies across all pages.
+func (ms *MovieService) GetAllMovies(ctx context.Context, filter models.MovieFilter) ([]models.MovieDetail, int, error) {
 	if err := ms.validateFilter(filter); err != nil {
-		return nil, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+		return nil, 0, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
-	movies, err := ms.repo.GetAllMovies(ctx, filter)
-
-	return movies, err
+	return ms.repo.GetAllMovies(ctx, filter)
 }
 
 // validateFilter is a helper that validates all query parameters
