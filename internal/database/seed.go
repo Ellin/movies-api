@@ -40,6 +40,7 @@ func ResetDatabase(app *handlers.App) error {
 	return nil
 }
 
+// seedDatabase populates database with dummy data
 func seedDatabase(ctx context.Context, app *handlers.App) error {
 	if err := seedGenres(ctx, app.GenreService); err != nil {
 		return fmt.Errorf("seedGenres: %w", err)
@@ -199,11 +200,11 @@ func seedActors(ctx context.Context, as *service.ActorService) error {
 func seedMovies(ctx context.Context, ms *service.MovieService) error {
 	movies := []service.MovieSubmission{
 		{Title: "The Last Horizon", ReleaseYear: 1995, Duration: 118, GenreIDs: []int64{1}, ActorIDs: []int64{1}},
-		{Title: "Midnight Runaway", ReleaseYear: 1996, Duration: 104, GenreIDs: []int64{2, 5}, ActorIDs: []int64{2, 14}},
-		{Title: "Echoes of Tomorrow", ReleaseYear: 1997, Duration: 126, GenreIDs: []int64{1, 4, 7}, ActorIDs: []int64{3, 9, 18}},
+		{Title: "Midnight Runaway", ReleaseYear: 1996, Duration: 104, GenreIDs: []int64{2, 5, 9}, ActorIDs: []int64{2, 14}},
+		{Title: "Echoes of Tomorrow", ReleaseYear: 1997, Duration: 126, GenreIDs: []int64{1, 4, 7, 9}, ActorIDs: []int64{3, 9, 18}},
 		{Title: "Summer at Dawn", ReleaseYear: 1998, Duration: 97, GenreIDs: []int64{3}, ActorIDs: []int64{4, 11}},
-		{Title: "Shadow Protocol", ReleaseYear: 1999, Duration: 132, GenreIDs: []int64{2, 7}, ActorIDs: []int64{5, 16, 21, 6}},
-		{Title: "The Forgotten Road", ReleaseYear: 2000, Duration: 111, GenreIDs: []int64{4, 8}, ActorIDs: []int64{6}},
+		{Title: "Shadow Protocol", ReleaseYear: 1999, Duration: 132, GenreIDs: []int64{2, 7, 10}, ActorIDs: []int64{5, 16, 21, 6}},
+		{Title: "The Forgotten Road", ReleaseYear: 2000, Duration: 111, GenreIDs: []int64{4, 8, 10}, ActorIDs: []int64{6}},
 		{Title: "City of Glass", ReleaseYear: 2001, Duration: 121, GenreIDs: []int64{1, 5, 6}, ActorIDs: []int64{7, 20, 3, 12}},
 		{Title: "Beyond the Storm", ReleaseYear: 2002, Duration: 109, GenreIDs: []int64{3, 7}, ActorIDs: []int64{8, 15}},
 		{Title: "A Quiet Place in Time", ReleaseYear: 2003, Duration: 103, GenreIDs: []int64{4}, ActorIDs: []int64{9, 17, 22, 1, 13}},
