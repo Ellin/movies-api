@@ -433,8 +433,28 @@ func (r *Repo) updateMovieActors(ctx context.Context, tx *sql.Tx, m models.Movie
 	return nil
 }
 
-// DeleteMovie deletes the movie by ID (DELETE)
-func (r *Repo) DeleteMovie(ctx context.Context, id int64) error {
+// DeleteMovie deletes the movie by ID. (DELETE)
+// Only allows deletion of movies that has associated genres or actors if force is true.
+func (r *Repo) DeleteMovie(ctx context.Context, id int64, force bool) error {
+	// No force: Check if movie has relationships with genres or actors before deletion.
+	if !force {
+		var hasRelationships bool
+
+		// Query returns a single row containing 1 (true) or 0 (false)
+		query := `SELECT EXISTS (
+		SELECT 1 FROM genres_movies WHERE movie_id = ?
+		UNION ALL
+		SELECT 1 FROM movies_actors WHERE movie_id = ?);`
+
+		if err := r.DB.QueryRowContext(ctx, query, id, id).Scan(&hasRelationships); err != nil {
+			return fmt.Errorf("checking movie relationships: %w", err)
+		}
+
+		if hasRelationships {
+			return errs.ErrForce
+		}
+	}
+
 	query := `DELETE FROM movies WHERE id = ?;`
 
 	result, err := r.DB.ExecContext(ctx, query, id)
