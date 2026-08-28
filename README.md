@@ -91,18 +91,7 @@ Pagination is implemented for `GET` requests returning multiple entities.
 | page     | Specifies which page of results to return. Starts at 0. |
 | size     | Results per page. Max size = 100. |
 
-Query parameter	Description
-page	Specifies which page of results to return. Starts at 0.
-size	Results per page. Max size = 100.
-Query parameter	Description
-page	Specifies which page of results to return. Starts at 0.
-size	Results per page. Max size = 100.
-
-Query parameter	Description
-page	Specifies which page of results to return. Starts at 0.
-size	Results per page. Max size = 100.
-
-Example: `GET /api/movies?page=0&size=10`
+**Example:** `GET /api/movies?page=0&size=10`
 
 If pagination parameters are not specified, the result is automatically paginated with default parameters of `page=0` and `size=10`.
 
