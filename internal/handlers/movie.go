@@ -102,18 +102,26 @@ func (app *App) GetAllMovies(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var movies []models.MovieDetail
+	var totalCount int
 	var err error
 
-	movies, err = app.MovieService.GetAllMovies(ctx, filter)
-
+	movies, totalCount, err = app.MovieService.GetAllMovies(ctx, filter)
 	if err != nil {
 		errs.WriteError(w, err)
 		return
 	}
 
+	response := PaginatedResponse[models.MovieDetail]{
+		Data:       movies,
+		Page:       filter.Pagination.Page,
+		PageSize:   filter.Pagination.PageSize,
+		TotalCount: totalCount,
+		TotalPages: calcTotalPages(totalCount, filter.Pagination.PageSize),
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(movies)
+	json.NewEncoder(w).Encode(response)
 }
 
 // get by ID
