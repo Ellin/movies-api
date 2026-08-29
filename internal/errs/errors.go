@@ -16,6 +16,11 @@ func WriteError(w http.ResponseWriter, err error) {
 		return
 	}
 
+	if errors.Is(err, context.DeadlineExceeded) {
+		http.Error(w, "request timed out", http.StatusGatewayTimeout)
+		return
+	}
+
 	if errors.Is(err, ErrNotFound) {
 		http.Error(w, ErrNotFound.Error(), http.StatusNotFound)
 		return
