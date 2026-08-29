@@ -187,7 +187,9 @@ func (app *App) DeleteMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := app.MovieService.DeleteMovie(ctx, id); err != nil {
+	var force bool = r.URL.Query().Get("force") == "true"
+
+	if err := app.MovieService.DeleteMovie(ctx, id, force); err != nil {
 		errs.WriteError(w, err)
 		return
 	}

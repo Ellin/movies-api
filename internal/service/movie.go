@@ -185,10 +185,8 @@ func stripMovieDetails(md models.MovieDetail) models.Movie {
 	return movie
 }
 
-func (ms *MovieService) DeleteMovie(ctx context.Context, id int64) error {
-	err := ms.repo.DeleteMovie(ctx, id)
-	fmt.Println(err)
-	return err
+func (ms *MovieService) DeleteMovie(ctx context.Context, id int64, force bool) error {
+	return ms.repo.DeleteMovie(ctx, id, force)
 }
 
 // validateReleaseYear checks that the movie's release year is between 1888 and the current year
