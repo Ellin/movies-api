@@ -33,6 +33,7 @@ func NewRouter(app *handlers.App) http.Handler {
 	// Add middleware
 	var handler http.Handler = mux // This works because *http.ServeMux satisfies the http.Handler interface
 	handler = middleware.Timeout(5 * time.Second)(handler)
+	handler = middleware.RecoverPanic(handler)
 
 	return handler
 }
