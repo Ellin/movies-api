@@ -36,6 +36,10 @@ func NewGenreService(r *repository.Repo, v *validator.Validate) *GenreService {
 func (gs *GenreService) AddGenre(ctx context.Context, sub GenreSubmission) (models.Genre, error) {
 
 	if err := gs.validate.Struct(sub); err != nil {
+		var validationErrors validator.ValidationErrors
+		if errors.As(err, &validationErrors) {
+			return models.Genre{}, handleValidationError(validationErrors)
+		}
 		return models.Genre{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
