@@ -43,20 +43,28 @@ func (app *App) GetAllActors(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var actors []models.ActorSummary
+	var totalCount int
 	if name == "" {
-		actors, err = app.ActorService.GetAllActors(ctx, pagination)
+		actors, totalCount, err = app.ActorService.GetAllActors(ctx, pagination)
 	} else {
-		actors, err = app.ActorService.GetAllActorsByName(ctx, name, pagination)
+		actors, totalCount, err = app.ActorService.GetAllActorsByName(ctx, name, pagination)
 	}
 
 	if err != nil {
 		errs.WriteError(w, err)
 		return
 	}
+	response := PaginatedResponse[models.ActorSummary]{
+		Data:       actors,
+		Page:       pagination.Page,
+		PageSize:   pagination.PageSize,
+		TotalCount: totalCount,
+		TotalPages: calcTotalPages(totalCount, pagination.PageSize),
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(actors)
+	json.NewEncoder(w).Encode(response)
 }
 
 // get
@@ -65,6 +73,7 @@ func (app *App) GetActor(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || id < 1 {
+		err = fmt.Errorf("id must be positive integer")
 		errs.WriteError(w, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err))
 		return
 	}
