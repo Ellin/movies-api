@@ -56,33 +56,34 @@ func (r *Repo) GetGenre(ctx context.Context, id int64) (models.Genre, error) {
 }
 
 // READ 1.2
-func (r *Repo) GetAllGenres(ctx context.Context, pag pagination.Pagination) ([]models.GenreSummary, error) {
-	query := "SELECT id, name FROM genres ORDER BY name ASC LIMIT ? OFFSET ?"
+func (r *Repo) GetAllGenres(ctx context.Context, pag pagination.Pagination) ([]models.GenreSummary, int, error) {
+	query := "SELECT COUNT(*) OVER() AS total_count, id, name FROM genres ORDER BY name ASC LIMIT ? OFFSET ?"
 	rows, err := r.DB.QueryContext(ctx, query, pag.Limit(), pag.Offset())
 	if err != nil {
-		return nil, fmt.Errorf("getting genres from genre table: %w", err)
+		return nil, 0, fmt.Errorf("getting genres from genre table: %w", err)
 	}
 
 	defer rows.Close()
 
-	var genres []models.GenreSummary
+	var genres = []models.GenreSummary{}
+	var totalcount int
 
 	for rows.Next() {
 		genre := models.GenreSummary{}
 
-		err = rows.Scan(&genre.ID, &genre.Name)
+		err = rows.Scan(&totalcount, &genre.ID, &genre.Name)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		genres = append(genres, genre)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating genre rows while getting all genres: %w", err)
+		return nil, 0, fmt.Errorf("iterating genre rows while getting all genres: %w", err)
 	}
 
-	return genres, nil
+	return genres, totalcount, nil
 }
 
 func (r *Repo) buildMovieIDslice(ctx context.Context, gID int64) ([]int64, error) {
@@ -137,13 +138,16 @@ func (r *Repo) DeleteGenre(ctx context.Context, id int64, force bool) error {
 	}
 
 	defer tx.Rollback()
+
 	//check if there're connections
 	checkConnectionQuery := `SELECT movie_id FROM genres_movies WHERE genre_id = ?`
 	rows, err := tx.QueryContext(ctx, checkConnectionQuery, id)
-	if err != nil {
-		return fmt.Errorf("getting rows from genres_movies: %w", err)
+	hasConnections := rows.Next()
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("checking rows: %w", err)
 	}
-	if rows != nil && !force {
+
+	if hasConnections && !force {
 		return errs.ErrForce
 	}
 
