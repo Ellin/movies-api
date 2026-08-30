@@ -12,11 +12,11 @@ func ResetDatabase(app *handlers.App) error {
 	ctx := context.Background()
 
 	query := `
-	DROP TABLE genres_movies;
-	DROP TABLE movies_actors;
-	DROP TABLE genres;
-	DROP TABLE actors;
-	DROP TABLE movies;
+	DROP TABLE IF EXISTS genres_movies;
+	DROP TABLE IF EXISTS movies_actors;
+	DROP TABLE IF EXISTS genres;
+	DROP TABLE IF EXISTS actors;
+	DROP TABLE IF EXISTS movies;
 	`
 
 	// Delete all data
