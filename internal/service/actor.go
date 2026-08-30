@@ -48,7 +48,6 @@ func NewActorService(r *repository.Repo, v *validator.Validate) *ActorService {
 	}
 }
 
-// For actors, your service should allow adding new actors with their name, birth date and associated movies.
 func (as *ActorService) AddActor(ctx context.Context, sub ActorSubmission) (models.Actor, error) {
 
 	if err := as.validate.Struct(sub); err != nil {
@@ -130,8 +129,6 @@ func validateActorName(name string) error {
 
 	return nil
 }
-
-// You'll need functions to retrieve all actors, fetch a specific actor by ID, and filter actors by movie or birth date.
 
 func (as *ActorService) GetActor(ctx context.Context, id int64) (models.Actor, error) {
 
