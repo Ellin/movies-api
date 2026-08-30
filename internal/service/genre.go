@@ -81,8 +81,6 @@ func (ms *MovieService) GetMovieSearch(ctx context.Context, title string, pag pa
 }
 
 func (gs *GenreService) PatchGenre(ctx context.Context, id int64, patch GenrePatch) (models.GenreSummary, error) {
-	g := models.GenreSummary{ID: id}
-
 	if err := gs.validate.Struct(patch); err != nil {
 		var validationErrors validator.ValidationErrors
 		if errors.As(err, &validationErrors) {
@@ -91,11 +89,11 @@ func (gs *GenreService) PatchGenre(ctx context.Context, id int64, patch GenrePat
 		return models.GenreSummary{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
+	g := models.GenreSummary{ID: id, Name: *patch.Name}
 	g, err := gs.repo.PatchGenre(ctx, g)
 	if err != nil {
 		return models.GenreSummary{}, err
 	}
-
 	return g, nil
 }
 
