@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"movies-api/internal/errs"
 	"movies-api/internal/models"
+	"movies-api/internal/pagination"
 	"movies-api/internal/repository"
 	"time"
 
@@ -204,9 +205,9 @@ func validateReleaseYear(year int) error {
 	return nil
 }
 
-func (ms *MovieService) GetActorsByMovie(ctx context.Context, movieID int64) ([]models.ActorSummary, error) {
+func (ms *MovieService) GetActorsByMovie(ctx context.Context, movieID int64, pageData pagination.Pagination) ([]models.ActorSummary, int, error) {
 	if movieID < 1 {
-		return nil, fmt.Errorf("%w: movie ID must be positive", errs.ErrInvalidUserInput)
+		return nil, 0, fmt.Errorf("%w: movie ID must be positive", errs.ErrInvalidUserInput)
 	}
-	return ms.repo.GetActorsByMovie(ctx, movieID)
+	return ms.repo.GetActorsByMoviePaginated(ctx, movieID, pageData)
 }

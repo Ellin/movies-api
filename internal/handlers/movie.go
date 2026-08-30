@@ -124,8 +124,8 @@ func (app *App) GetMovieSearch(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// PatchMovie decodes the request body and updates the movie matching
-// the {id} path parameter with the provided fields.
+// PatchMovie decodes the request body and updates the movie matching the {id} path parameter
+// with the provided fields. Responds with the updated movie on success.
 func (app *App) PatchMovie(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -187,15 +187,29 @@ func (app *App) GetMovieActors(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	actors, err := app.MovieService.GetActorsByMovie(ctx, movieID)
+	pageData, err := pagination.Parse(r.URL.Query())
 	if err != nil {
 		errs.WriteError(w, err)
 		return
 	}
 
+	actors, totalCount, err := app.MovieService.GetActorsByMovie(ctx, movieID, pageData)
+	if err != nil {
+		errs.WriteError(w, err)
+		return
+	}
+
+	response := PaginatedResponse[models.ActorSummary]{
+		Data:       actors,
+		Page:       pageData.Page,
+		PageSize:   pageData.PageSize,
+		TotalCount: totalCount,
+		TotalPages: calcTotalPages(totalCount, pageData.PageSize),
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(actors)
+	json.NewEncoder(w).Encode(response)
 }
 
 // parseFilters parses all filter parameters from query values into models.MovieFilter

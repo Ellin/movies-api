@@ -88,7 +88,7 @@ func (r *Repo) GetMovie(ctx context.Context, id int64) (models.MovieDetail, erro
 		return models.MovieDetail{}, err
 	}
 
-	m.Actors, err = r.GetActorsByMovie(ctx, id)
+	m.Actors, err = r.getActorsByMovie(ctx, id)
 	if err != nil {
 		return models.MovieDetail{}, err
 	}
@@ -129,7 +129,7 @@ func (r *Repo) getGenresByMovie(ctx context.Context, movieID int64) ([]models.Ge
 }
 
 // getActorsByMovie is a helper that retrieves all actors (with id and name) associated with a given movie ID
-func (r *Repo) GetActorsByMovie(ctx context.Context, movieID int64) ([]models.ActorSummary, error) {
+func (r *Repo) getActorsByMovie(ctx context.Context, movieID int64) ([]models.ActorSummary, error) {
 	// Get actor data associated with the given movie ID
 	query := `SELECT ma.actor_id, a.name
 	FROM movies_actors ma JOIN actors a ON ma.actor_id = a.id
@@ -157,6 +157,41 @@ func (r *Repo) GetActorsByMovie(ctx context.Context, movieID int64) ([]models.Ac
 	}
 
 	return actors, nil
+}
+
+// GetActorsByMoviePaginated retrieves all actors associated with a given movie ID matching pagination parameters.
+func (r *Repo) GetActorsByMoviePaginated(ctx context.Context, movieID int64, pageData pagination.Pagination) ([]models.ActorSummary, int, error) {
+	// Get actor data associated with the given movie ID
+	query := `SELECT COUNT(*) OVER() AS total_count, ma.actor_id, a.name
+	FROM movies_actors ma JOIN actors a ON ma.actor_id = a.id
+	WHERE ma.movie_id = ? 
+	ORDER BY ma.actor_id
+	LIMIT ? OFFSET ?;`
+
+	rows, err := r.DB.QueryContext(ctx, query, movieID, pageData.Limit(), pageData.Offset())
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var actors []models.ActorSummary
+	var totalCount int
+
+	for rows.Next() {
+		var actor models.ActorSummary
+		err = rows.Scan(&totalCount, &actor.ID, &actor.Name)
+		if err != nil {
+			return nil, 0, fmt.Errorf("scanning rows: %w", err)
+		}
+		actors = append(actors, actor)
+	}
+
+	// Check if rows.Next() loop stopped due to error
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterating rows: %w", err)
+	}
+
+	return actors, totalCount, nil
 }
 
 // GetAllMovies returns movies matching filter's criteria, restricted to the pagination parameters.
@@ -238,7 +273,8 @@ func createQueryFromFilters(filter models.MovieFilter) (query string, args []any
 	return query, args
 }
 
-// scanMoviesFromRows is a helper that scans rows selected from the movies table and returns []models.MovieDetail
+// scanMoviesFromRows is a helper that scans rows selected from the movies table and returns []models.MovieDetail.
+// Each row should have total_count as the first column, returned as totalCount for pagination.
 func (r *Repo) scanMoviesFromRows(ctx context.Context, rows *sql.Rows) ([]models.MovieDetail, int, error) {
 	// make movie-genres map with movie id as key
 	movieGenresMap, err := r.buildMovieGenresMap(ctx)
