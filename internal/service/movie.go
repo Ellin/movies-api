@@ -18,7 +18,7 @@ type MovieService struct {
 }
 
 type MovieSubmission struct {
-	Title       string  `json:"title" validate:"required"`
+	Title       string  `json:"title" validate:"required,max=255"`
 	ReleaseYear int     `json:"release_year" validate:"required"`
 	Duration    int     `json:"duration" validate:"required,gte=1,lte=100000"`
 	GenreIDs    []int64 `json:"genre_ids" validate:"dive,gte=1"`
@@ -28,7 +28,7 @@ type MovieSubmission struct {
 // MoviePatch uses pointers so users can do partial updates for movie data
 // Nil pointer values can be used to distinguish data not provided from zero/empty values
 type MoviePatch struct {
-	Title       *string  `json:"title" validate:"omitempty,min=1"`
+	Title       *string  `json:"title" validate:"omitempty,min=1,max=255"`
 	ReleaseYear *int     `json:"release_year"`
 	Duration    *int     `json:"duration" validate:"omitempty,gte=1,lte=100000"`
 	GenreIDs    *[]int64 `json:"genre_ids" validate:"omitempty,dive,gte=1"`
@@ -43,6 +43,10 @@ func NewMovieService(r *repository.Repo, v *validator.Validate) *MovieService {
 func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (models.MovieDetail, error) {
 	// Struct level validation
 	if err := ms.validate.Struct(sub); err != nil {
+		var validationErrors validator.ValidationErrors
+		if errors.As(err, &validationErrors) {
+			return models.MovieDetail{}, handleValidationError(validationErrors)
+		}
 		return models.MovieDetail{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
@@ -116,6 +120,10 @@ func (ms *MovieService) validateFilter(filter models.MovieFilter) error {
 func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePatch) (models.MovieDetail, error) {
 	// Struct level validation
 	if err := ms.validate.Struct(patch); err != nil {
+		var validationErrors validator.ValidationErrors
+		if errors.As(err, &validationErrors) {
+			return models.MovieDetail{}, handleValidationError(validationErrors)
+		}
 		return models.MovieDetail{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 

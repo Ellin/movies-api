@@ -52,6 +52,11 @@ func NewActorService(r *repository.Repo, v *validator.Validate) *ActorService {
 func (as *ActorService) AddActor(ctx context.Context, sub ActorSubmission) (models.Actor, error) {
 
 	if err := as.validate.Struct(sub); err != nil {
+		var validationErrors validator.ValidationErrors
+		if errors.As(err, &validationErrors) {
+			return models.Actor{}, handleValidationError(validationErrors)
+		}
+
 		return models.Actor{}, fmt.Errorf(
 			"%w: %w",
 			errs.ErrInvalidUserInput,
@@ -153,6 +158,10 @@ func (as *ActorService) GetAllActorsByName(ctx context.Context, name string, pag
 func (as *ActorService) PatchActor(ctx context.Context, id int64, patch ActorPatch) (models.Actor, error) {
 	// Struct level validation
 	if err := as.validate.Struct(patch); err != nil {
+		var validationErrors validator.ValidationErrors
+		if errors.As(err, &validationErrors) {
+			return models.Actor{}, handleValidationError(validationErrors)
+		}
 		return models.Actor{}, fmt.Errorf(
 			"%w: %w",
 			errs.ErrInvalidUserInput,
