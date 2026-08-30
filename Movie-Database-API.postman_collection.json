@@ -16,7 +16,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/movie",
+              "raw": "http://localhost:8080/api/movies",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -24,7 +24,7 @@
               "port": "8080",
               "path": [
                 "api",
-                "movie"
+                "movies"
               ]
             }
           },
@@ -36,7 +36,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/movie/1",
+              "raw": "http://localhost:8080/api/movies/3",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -44,8 +44,8 @@
               "port": "8080",
               "path": [
                 "api",
-                "movie",
-                "1"
+                "movies",
+                "3"
               ]
             }
           },
@@ -58,7 +58,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"title\": \"Dream Land 2\",\n    \"release_year\": 2026,\n    \"duration\": 121,\n    \"genre_ids\": [1, 2],\n    \"actor_ids\": [8,9]\n}\n",
+              "raw": "{\n  \"title\": \"The Great Dawn\",\n  \"release_year\": 2026,\n  \"duration\": 120,\n  \"genre_ids\": [1, 4],\n  \"actor_ids\": [5, 7, 19, 22]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -66,7 +66,7 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/movie",
+              "raw": "http://localhost:8080/api/movies",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -74,7 +74,7 @@
               "port": "8080",
               "path": [
                 "api",
-                "movie"
+                "movies"
               ]
             }
           },
@@ -87,7 +87,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"title\": \"Dream Land\"\n}\n",
+              "raw": "{\n  \"title\": \"Dream Land\",\n  \"genre_ids\": [1, 4]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -95,7 +95,7 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/movie/12",
+              "raw": "http://localhost:8080/api/movies/1",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -103,8 +103,8 @@
               "port": "8080",
               "path": [
                 "api",
-                "movie",
-                "12"
+                "movies",
+                "1"
               ]
             }
           },
@@ -125,7 +125,7 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/movie/14",
+              "raw": "http://localhost:8080/api/movies/1",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -133,8 +133,44 @@
               "port": "8080",
               "path": [
                 "api",
-                "movie",
-                "14"
+                "movies",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete movie force",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"The Dream Land\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "text"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/movies/1?force=true",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "movies",
+                "1"
+              ],
+              "query": [
+                {
+                  "key": "force",
+                  "value": "true"
+                }
               ]
             }
           },
@@ -151,7 +187,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/genre/9",
+              "raw": "http://localhost:8080/api/genres/9",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -159,7 +195,7 @@
               "port": "8080",
               "path": [
                 "api",
-                "genre",
+                "genres",
                 "9"
               ]
             }
@@ -172,7 +208,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/genre",
+              "raw": "http://localhost:8080/api/genres",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -180,7 +216,7 @@
               "port": "8080",
               "path": [
                 "api",
-                "genre"
+                "genres"
               ]
             }
           },
@@ -193,7 +229,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"\"}",
+              "raw": "{\n  \"name\": \"Romantic Comedy\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -201,7 +237,7 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/genre",
+              "raw": "http://localhost:8080/api/genres",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -209,7 +245,7 @@
               "port": "8080",
               "path": [
                 "api",
-                "genre"
+                "genres"
               ]
             }
           },
@@ -230,7 +266,7 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/genre/11",
+              "raw": "http://localhost:8080/api/genres/1",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -238,8 +274,8 @@
               "port": "8080",
               "path": [
                 "api",
-                "genre",
-                "11"
+                "genres",
+                "1"
               ]
             }
           },
@@ -251,7 +287,7 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/genre/10?force=true",
+              "raw": "http://localhost:8080/api/genres/1",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -259,8 +295,29 @@
               "port": "8080",
               "path": [
                 "api",
-                "genre",
-                "10"
+                "genres",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete genre force",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/genres/1?force=true",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "genres",
+                "1"
               ],
               "query": [
                 {
@@ -280,10 +337,19 @@
         {
           "name": "Get actor by ID",
           "request": {
-            "method": "GET",
+            "method": "PATCH",
             "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Markus Parker\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": "http://localhost:8080/api/actor/9",
+              "raw": "http://localhost:8080/api/actors/1",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -291,8 +357,8 @@
               "port": "8080",
               "path": [
                 "api",
-                "actor",
-                "9"
+                "actors",
+                "1"
               ]
             }
           },
@@ -304,7 +370,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/actor",
+              "raw": "http://localhost:8080/api/actors",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -312,7 +378,7 @@
               "port": "8080",
               "path": [
                 "api",
-                "actor"
+                "actors"
               ]
             }
           },
@@ -325,7 +391,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"Lily\",\n\"birth_date\": \"1995-02-28\"\n}",
+              "raw": "{\n    \"name\": \"Lily Jones\",\n    \"birth_date\": \"1995-02-28\",\n    \"movie_ids\": [2, 3]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -333,7 +399,7 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/actor",
+              "raw": "http://localhost:8080/api/actors",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -341,14 +407,14 @@
               "port": "8080",
               "path": [
                 "api",
-                "actor"
+                "actors"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "Update genre",
+          "name": "Update actor",
           "request": {
             "method": "PATCH",
             "header": [],
@@ -362,7 +428,7 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/actor/12",
+              "raw": "http://localhost:8080/api/actors/1",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -370,20 +436,20 @@
               "port": "8080",
               "path": [
                 "api",
-                "actor",
-                "12"
+                "actors",
+                "1"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "Delete genre",
+          "name": "Delete actor",
           "request": {
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/genre/10?force=true",
+              "raw": "http://localhost:8080/api/actors/1?",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -391,8 +457,35 @@
               "port": "8080",
               "path": [
                 "api",
-                "genre",
-                "10"
+                "actors",
+                "1"
+              ],
+              "query": [
+                {
+                  "key": "",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete actor force",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/actors/1?force=true",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "actors",
+                "1"
               ],
               "query": [
                 {
@@ -415,7 +508,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/movie?genre=1",
+              "raw": "http://localhost:8080/api/movies?genre=10",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -423,12 +516,12 @@
               "port": "8080",
               "path": [
                 "api",
-                "movie"
+                "movies"
               ],
               "query": [
                 {
                   "key": "genre",
-                  "value": "1"
+                  "value": "10"
                 }
               ]
             }
@@ -441,7 +534,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/movie?actor=3",
+              "raw": "http://localhost:8080/api/movies?actor=10",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -449,12 +542,12 @@
               "port": "8080",
               "path": [
                 "api",
-                "movie"
+                "movies"
               ],
               "query": [
                 {
                   "key": "actor",
-                  "value": "3"
+                  "value": "10"
                 }
               ]
             }
@@ -467,7 +560,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/movie?year=1999",
+              "raw": "http://localhost:8080/api/movies?year=1999",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -475,7 +568,7 @@
               "port": "8080",
               "path": [
                 "api",
-                "movie"
+                "movies"
               ],
               "query": [
                 {
@@ -493,7 +586,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/movie?genre=4&year=2022",
+              "raw": "http://localhost:8080/api/movies?genre=4&year=2022",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -501,7 +594,7 @@
               "port": "8080",
               "path": [
                 "api",
-                "movie"
+                "movies"
               ],
               "query": [
                 {
@@ -523,7 +616,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/movie?page=0&size=5&year=1999&genre=1&actor=17",
+              "raw": "http://localhost:8080/api/movies?page=0&size=5&year=1999&genre=1&actor=17",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -531,7 +624,7 @@
               "port": "8080",
               "path": [
                 "api",
-                "movie"
+                "movies"
               ],
               "query": [
                 {
@@ -565,7 +658,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/movie/3/actors",
+              "raw": "http://localhost:8080/api/movies/3/actors",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -573,7 +666,7 @@
               "port": "8080",
               "path": [
                 "api",
-                "movie",
+                "movies",
                 "3",
                 "actors"
               ]
@@ -587,7 +680,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/actor?name=michael",
+              "raw": "http://localhost:8080/api/actors?name=michael",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -595,12 +688,39 @@
               "port": "8080",
               "path": [
                 "api",
-                "actor"
+                "actors"
               ],
               "query": [
                 {
                   "key": "name",
                   "value": "michael"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search movies by title",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/movies/search?title=last",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "movies",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "last"
                 }
               ]
             }
