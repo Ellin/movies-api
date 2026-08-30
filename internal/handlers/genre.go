@@ -3,9 +3,11 @@ package handlers
 import (
 	"encoding/json"
 	"movies-api/internal/errs"
+	"movies-api/internal/models"
 	"movies-api/internal/pagination"
 	"movies-api/internal/service"
 	"net/http"
+	"strings"
 )
 
 // post
@@ -37,20 +39,28 @@ func (app *App) PostGenre(w http.ResponseWriter, r *http.Request) {
 func (app *App) GetAllGenres(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	pagination, err := pagination.Parse(r.URL.Query())
+	pagData, err := pagination.Parse(r.URL.Query())
 	if err != nil {
 		errs.WriteError(w, err)
 		return
 	}
 
-	genres, err := app.GenreService.GetAllGenres(ctx, pagination)
+	genres, totalCount, err := app.GenreService.GetAllGenres(ctx, pagData)
 	if err != nil {
 		errs.WriteError(w, err)
 		return
+	}
+
+	response := PaginatedResponse[models.GenreSummary]{
+		Data:       genres,
+		Page:       pagData.Page,
+		PageSize:   pagData.PageSize,
+		TotalCount: totalCount,
+		TotalPages: calcTotalPages(totalCount, pagData.PageSize),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(genres)
+	json.NewEncoder(w).Encode(response)
 }
 
 // get
@@ -87,6 +97,10 @@ func (app *App) PatchGenre(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
+	}
+
+	if patch.Name != nil {
+		*patch.Name = strings.TrimSpace(*patch.Name)
 	}
 
 	genre, err := app.GenreService.PatchGenre(ctx, id, patch)

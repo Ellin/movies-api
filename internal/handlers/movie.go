@@ -145,6 +145,36 @@ func (app *App) GetMovie(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(movie)
 }
 
+func (app *App) GetMovieSearch(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	titleSearch := r.URL.Query().Get("title")
+
+	pagData, err := pagination.Parse(r.URL.Query())
+	if err != nil {
+		errs.WriteError(w, err)
+		return
+	}
+
+	movies, totalCount, err := app.MovieService.GetMovieSearch(ctx, titleSearch, pagData)
+	if err != nil {
+		errs.WriteError(w, err)
+		return
+	}
+
+	response := PaginatedResponse[models.MovieDetail]{
+		Data:       movies,
+		Page:       pagData.Page,
+		PageSize:   pagData.PageSize,
+		TotalCount: totalCount,
+		TotalPages: calcTotalPages(totalCount, pagData.PageSize),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
 // update by ID
 func (app *App) PatchMovie(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

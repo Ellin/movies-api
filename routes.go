@@ -15,6 +15,7 @@ func NewRouter(app *handlers.App) http.Handler {
 	mux.HandleFunc("GET /api/movie", app.GetAllMovies)
 	mux.HandleFunc("GET /api/movie/{id}/actors", app.GetMovieActors)
 	mux.HandleFunc("GET /api/movie/{id}", app.GetMovie)
+	mux.HandleFunc("GET /api/movie/search", app.GetMovieSearch)
 	mux.HandleFunc("PATCH /api/movie/{id}", app.PatchMovie)
 	mux.HandleFunc("DELETE /api/movie/{id}", app.DeleteMovie)
 	//genre routes

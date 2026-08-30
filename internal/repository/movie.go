@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"movies-api/internal/errs"
 	"movies-api/internal/models"
+	"movies-api/internal/pagination"
 	"strings"
 )
 
@@ -176,6 +177,23 @@ func (r *Repo) GetAllMovies(ctx context.Context, filter models.MovieFilter) ([]m
 
 	return allMovies, totalCount, nil
 }
+func (r *Repo) GetMovieSearch(ctx context.Context, title string, pag pagination.Pagination) ([]models.MovieDetail, int, error) {
+	query := `SELECT COUNT(*) OVER() AS total_count, id, title, releaseYear, duration FROM movies WHERE title LIKE ? ORDER BY id ASC LIMIT ? OFFSET ?;`
+	pattern := "%" + title + "%"
+
+	rows, err := r.DB.QueryContext(ctx, query, pattern, pag.Limit(), pag.Offset())
+	if err != nil {
+		return nil, 0, fmt.Errorf("error getting movies based on search: %w", err)
+	}
+
+	defer rows.Close()
+
+	movies, totalcount, err := r.scanMoviesFromRows(ctx, rows)
+	if err != nil {
+		return nil, 0, err
+	}
+	return movies, totalcount, nil
+}
 
 // createQueryFromFilters is a helper that constructs a query string for from MovieFilter. Returns the query and arguments for query execution.
 func createQueryFromFilters(filter models.MovieFilter) (query string, args []any) {
@@ -234,7 +252,7 @@ func (r *Repo) scanMoviesFromRows(ctx context.Context, rows *sql.Rows) ([]models
 		return nil, 0, err
 	}
 
-	var movies []models.MovieDetail
+	var movies = []models.MovieDetail{}
 	var totalCount int
 
 	// Scan rows and add each movie to movies
