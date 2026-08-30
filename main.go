@@ -9,6 +9,8 @@ import (
 	"movies-api/internal/repository"
 	"movies-api/internal/service"
 	"net/http"
+	"reflect"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	_ "github.com/mattn/go-sqlite3"
@@ -28,7 +30,18 @@ func main() {
 
 	// Initialize the application's dependencies
 	repo := &repository.Repo{DB: db}
+	// Intialize validator
 	validate := validator.New()
+
+	// Register JSON field names as validator field names instead of default Go struct field names
+	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		if name == "-" {
+			return ""
+		}
+		return name
+	})
+
 	app := handlers.App{
 		Repo:         repo, // to be deleted once all services are set
 		MovieService: service.NewMovieService(repo, validate),

@@ -85,62 +85,62 @@ func (r *Repo) GetActor(ctx context.Context, id int64) (models.Actor, error) {
 }
 
 // GetAllActors gets all actors data from the actors table (READ)
-func (r *Repo) GetAllActors(ctx context.Context, pagination pagination.Pagination) ([]models.ActorSummary, error) {
-	query := `SELECT id, name FROM actors ORDER BY name ASC LIMIT ? OFFSET ?;`
+func (r *Repo) GetAllActors(ctx context.Context, pagination pagination.Pagination) ([]models.ActorSummary, int, error) {
+	query := `SELECT  COUNT(*) OVER() AS total_count, id, name FROM actors ORDER BY name ASC LIMIT ? OFFSET ?;`
 
 	rows, err := r.DB.QueryContext(ctx, query, pagination.Limit(), pagination.Offset())
 	if err != nil {
-		return nil, fmt.Errorf("getting all actors: %w", err)
+		return nil, 0, fmt.Errorf("getting all actors: %w", err)
 	}
 	defer rows.Close()
 
 	var actors []models.ActorSummary
+	var totalCount int
 
 	for rows.Next() {
 		var actor models.ActorSummary
 
-		if err := rows.Scan(&actor.ID, &actor.Name); err != nil {
-			return nil, fmt.Errorf("scanning actor row: %w", err)
+		if err := rows.Scan(&totalCount, &actor.ID, &actor.Name); err != nil {
+			return nil, 0, fmt.Errorf("scanning actor row: %w", err)
 		}
 
 		actors = append(actors, actor)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating actor rows: %w", err)
+		return nil, 0, fmt.Errorf("iterating actor rows: %w", err)
 	}
 
-	return actors, nil
+	return actors, totalCount, nil
 }
 
-func (r *Repo) GetAllActorsByName(ctx context.Context, name string, pagination pagination.Pagination) ([]models.ActorSummary, error) {
-	query := `SELECT id, name FROM actors WHERE LOWER(name) LIKE LOWER(?) ORDER BY name ASC LIMIT ? OFFSET ?;`
+func (r *Repo) GetAllActorsByName(ctx context.Context, name string, pagination pagination.Pagination) ([]models.ActorSummary, int, error) {
+	query := `SELECT COUNT(*) OVER() AS total_count, id, name FROM actors WHERE LOWER(name) LIKE LOWER(?) ORDER BY name ASC LIMIT ? OFFSET ?;`
 	rows, err := r.DB.QueryContext(ctx, query, "%"+name+"%", pagination.Limit(), pagination.Offset())
 	if err != nil {
-		return nil, fmt.Errorf("getting actors by name: %w", err)
+		return nil, 0, fmt.Errorf("getting actors by name: %w", err)
 	}
 	defer rows.Close()
 
 	var actors []models.ActorSummary
+	var totalCount int
 	for rows.Next() {
 		var actor models.ActorSummary
 
 		if err := rows.Scan(
+			&totalCount,
 			&actor.ID,
 			&actor.Name,
 		); err != nil {
-			return nil, fmt.Errorf("scanning actor: %w", err)
-		}
-		if err != nil {
-			return nil, err
+			return nil, 0, fmt.Errorf("scanning actor: %w", err)
 		}
 
 		actors = append(actors, actor)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating actors: %w", err)
+		return nil, 0, fmt.Errorf("iterating actors: %w", err)
 	}
-	return actors, nil
+	return actors, totalCount, nil
 }
 
 // getMovieIDsByActor collects movie IDs that are associated with actor ID into slice

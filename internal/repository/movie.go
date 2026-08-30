@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"movies-api/internal/errs"
 	"movies-api/internal/models"
+	"movies-api/internal/pagination"
 	"strings"
 )
 
@@ -87,7 +88,7 @@ func (r *Repo) GetMovie(ctx context.Context, id int64) (models.MovieDetail, erro
 		return models.MovieDetail{}, err
 	}
 
-	m.Actors, err = r.GetActorsByMovie(ctx, id)
+	m.Actors, err = r.getActorsByMovie(ctx, id)
 	if err != nil {
 		return models.MovieDetail{}, err
 	}
@@ -128,7 +129,7 @@ func (r *Repo) getGenresByMovie(ctx context.Context, movieID int64) ([]models.Ge
 }
 
 // getActorsByMovie is a helper that retrieves all actors (with id and name) associated with a given movie ID
-func (r *Repo) GetActorsByMovie(ctx context.Context, movieID int64) ([]models.ActorSummary, error) {
+func (r *Repo) getActorsByMovie(ctx context.Context, movieID int64) ([]models.ActorSummary, error) {
 	// Get actor data associated with the given movie ID
 	query := `SELECT ma.actor_id, a.name
 	FROM movies_actors ma JOIN actors a ON ma.actor_id = a.id
@@ -158,6 +159,41 @@ func (r *Repo) GetActorsByMovie(ctx context.Context, movieID int64) ([]models.Ac
 	return actors, nil
 }
 
+// GetActorsByMoviePaginated retrieves all actors associated with a given movie ID matching pagination parameters.
+func (r *Repo) GetActorsByMoviePaginated(ctx context.Context, movieID int64, pageData pagination.Pagination) ([]models.ActorSummary, int, error) {
+	// Get actor data associated with the given movie ID
+	query := `SELECT COUNT(*) OVER() AS total_count, ma.actor_id, a.name
+	FROM movies_actors ma JOIN actors a ON ma.actor_id = a.id
+	WHERE ma.movie_id = ? 
+	ORDER BY ma.actor_id
+	LIMIT ? OFFSET ?;`
+
+	rows, err := r.DB.QueryContext(ctx, query, movieID, pageData.Limit(), pageData.Offset())
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var actors []models.ActorSummary
+	var totalCount int
+
+	for rows.Next() {
+		var actor models.ActorSummary
+		err = rows.Scan(&totalCount, &actor.ID, &actor.Name)
+		if err != nil {
+			return nil, 0, fmt.Errorf("scanning rows: %w", err)
+		}
+		actors = append(actors, actor)
+	}
+
+	// Check if rows.Next() loop stopped due to error
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterating rows: %w", err)
+	}
+
+	return actors, totalCount, nil
+}
+
 // GetAllMovies returns movies matching filter's criteria, restricted to the pagination parameters.
 // Also returns the total number of matching movies across all pages.
 func (r *Repo) GetAllMovies(ctx context.Context, filter models.MovieFilter) ([]models.MovieDetail, int, error) {
@@ -175,6 +211,23 @@ func (r *Repo) GetAllMovies(ctx context.Context, filter models.MovieFilter) ([]m
 	}
 
 	return allMovies, totalCount, nil
+}
+func (r *Repo) GetMovieSearch(ctx context.Context, title string, pag pagination.Pagination) ([]models.MovieDetail, int, error) {
+	query := `SELECT COUNT(*) OVER() AS total_count, id, title, releaseYear, duration FROM movies WHERE title LIKE ? ORDER BY id ASC LIMIT ? OFFSET ?;`
+	pattern := "%" + title + "%"
+
+	rows, err := r.DB.QueryContext(ctx, query, pattern, pag.Limit(), pag.Offset())
+	if err != nil {
+		return nil, 0, fmt.Errorf("error getting movies based on search: %w", err)
+	}
+
+	defer rows.Close()
+
+	movies, totalcount, err := r.scanMoviesFromRows(ctx, rows)
+	if err != nil {
+		return nil, 0, err
+	}
+	return movies, totalcount, nil
 }
 
 // createQueryFromFilters is a helper that constructs a query string for from MovieFilter. Returns the query and arguments for query execution.
@@ -220,7 +273,8 @@ func createQueryFromFilters(filter models.MovieFilter) (query string, args []any
 	return query, args
 }
 
-// scanMoviesFromRows is a helper that scans rows selected from the movies table and returns []models.MovieDetail
+// scanMoviesFromRows is a helper that scans rows selected from the movies table and returns []models.MovieDetail.
+// Each row should have total_count as the first column, returned as totalCount for pagination.
 func (r *Repo) scanMoviesFromRows(ctx context.Context, rows *sql.Rows) ([]models.MovieDetail, int, error) {
 	// make movie-genres map with movie id as key
 	movieGenresMap, err := r.buildMovieGenresMap(ctx)
@@ -234,7 +288,7 @@ func (r *Repo) scanMoviesFromRows(ctx context.Context, rows *sql.Rows) ([]models
 		return nil, 0, err
 	}
 
-	var movies []models.MovieDetail
+	var movies = []models.MovieDetail{}
 	var totalCount int
 
 	// Scan rows and add each movie to movies
@@ -435,8 +489,28 @@ func (r *Repo) updateMovieActors(ctx context.Context, tx *sql.Tx, m models.Movie
 	return nil
 }
 
-// DeleteMovie deletes the movie by ID (DELETE)
-func (r *Repo) DeleteMovie(ctx context.Context, id int64) error {
+// DeleteMovie deletes the movie by ID. (DELETE)
+// Only allows deletion of movies that has associated genres or actors if force is true.
+func (r *Repo) DeleteMovie(ctx context.Context, id int64, force bool) error {
+	// No force: Check if movie has relationships with genres or actors before deletion.
+	if !force {
+		var hasRelationships bool
+
+		// Query returns a single row containing 1 (true) or 0 (false)
+		query := `SELECT EXISTS (
+		SELECT 1 FROM genres_movies WHERE movie_id = ?
+		UNION ALL
+		SELECT 1 FROM movies_actors WHERE movie_id = ?);`
+
+		if err := r.DB.QueryRowContext(ctx, query, id, id).Scan(&hasRelationships); err != nil {
+			return fmt.Errorf("checking movie relationships: %w", err)
+		}
+
+		if hasRelationships {
+			return errs.ErrForce
+		}
+	}
+
 	query := `DELETE FROM movies WHERE id = ?;`
 
 	result, err := r.DB.ExecContext(ctx, query, id)

@@ -48,10 +48,14 @@ func NewActorService(r *repository.Repo, v *validator.Validate) *ActorService {
 	}
 }
 
-// For actors, your service should allow adding new actors with their name, birth date and associated movies.
 func (as *ActorService) AddActor(ctx context.Context, sub ActorSubmission) (models.Actor, error) {
 
 	if err := as.validate.Struct(sub); err != nil {
+		var validationErrors validator.ValidationErrors
+		if errors.As(err, &validationErrors) {
+			return models.Actor{}, handleValidationError(validationErrors)
+		}
+
 		return models.Actor{}, fmt.Errorf(
 			"%w: %w",
 			errs.ErrInvalidUserInput,
@@ -126,8 +130,6 @@ func validateActorName(name string) error {
 	return nil
 }
 
-// You'll need functions to retrieve all actors, fetch a specific actor by ID, and filter actors by movie or birth date.
-
 func (as *ActorService) GetActor(ctx context.Context, id int64) (models.Actor, error) {
 
 	if id < 1 {
@@ -140,19 +142,34 @@ func (as *ActorService) GetActor(ctx context.Context, id int64) (models.Actor, e
 	return actor, err
 }
 
-func (as *ActorService) GetAllActors(ctx context.Context, pagination pagination.Pagination) ([]models.ActorSummary, error) {
+func (as *ActorService) GetAllActors(ctx context.Context, pagination pagination.Pagination) ([]models.ActorSummary, int, error) {
+	if err := pagination.Validate(); err != nil {
+		return nil, 0, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+	}
 	return as.repo.GetAllActors(ctx, pagination)
 }
 
-func (as *ActorService) GetAllActorsByName(ctx context.Context, name string, pagination pagination.Pagination) ([]models.ActorSummary, error) {
+func (as *ActorService) GetAllActorsByName(ctx context.Context, name string, pagination pagination.Pagination) ([]models.ActorSummary, int, error) {
+	if err := pagination.Validate(); err != nil {
+		return nil, 0, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+	}
+	if name == "" {
+		return nil, 0, fmt.Errorf("%w: actor name cannot be empty", errs.ErrInvalidUserInput)
+	}
 	name = strings.TrimSpace(name)
-	validateActorName(name)
+	if err := validateActorName(name); err != nil {
+		return nil, 0, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+	}
 	return as.repo.GetAllActorsByName(ctx, name, pagination)
 }
 
 func (as *ActorService) PatchActor(ctx context.Context, id int64, patch ActorPatch) (models.Actor, error) {
 	// Struct level validation
 	if err := as.validate.Struct(patch); err != nil {
+		var validationErrors validator.ValidationErrors
+		if errors.As(err, &validationErrors) {
+			return models.Actor{}, handleValidationError(validationErrors)
+		}
 		return models.Actor{}, fmt.Errorf(
 			"%w: %w",
 			errs.ErrInvalidUserInput,

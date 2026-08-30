@@ -16,6 +16,11 @@ func WriteError(w http.ResponseWriter, err error) {
 		return
 	}
 
+	if errors.Is(err, context.DeadlineExceeded) {
+		http.Error(w, "request timed out", http.StatusGatewayTimeout)
+		return
+	}
+
 	if errors.Is(err, ErrNotFound) {
 		http.Error(w, ErrNotFound.Error(), http.StatusNotFound)
 		return
@@ -30,6 +35,8 @@ func WriteError(w http.ResponseWriter, err error) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	log.Println("internal server error:", err)
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 
