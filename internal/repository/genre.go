@@ -105,6 +105,11 @@ func (r *Repo) buildMovieIDslice(ctx context.Context, gID int64) ([]int64, error
 		movieIDs = append(movieIDs, movie)
 	}
 
+	// Check if rows.Next() loop stopped due to error
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating rows: %w", err)
+	}
+
 	return movieIDs, nil
 }
 
