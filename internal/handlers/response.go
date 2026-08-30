@@ -1,5 +1,6 @@
 package handlers
 
+// PaginatedResponse wraps fetched data with pagination metadata
 type PaginatedResponse[T any] struct {
 	Data       []T `json:"data"`
 	Page       int `json:"page"`
