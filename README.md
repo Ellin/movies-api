@@ -1,22 +1,25 @@
 # Movies API
-A REST API built with Go and SQLite for managing a movie database.
+A REST API built with Go and SQLite for managing a movie database. Uses layered architecture and features filtering, search, and pagination.
+
+[Additional technical features](#bonus-features) include middleware for panic recovery and timeout, transactions, context cancellation, input validation, and global error handling.
 
 ## Project Overview
-The API supports CRUD (Create, Read, Update, Delete) operations on three independently managed entities: `movies`, `genres`, and `actors`.
+The API supports CRUD (Create, Read, Update, Delete) operations on three entities: `movies`, `genres`, and `actors`.
 
-Movies can have many-to-many relationships with genres and actors, and functionality exists to create these relationships.
-
-Extra features include filtering, search, and pagination.
+Movies can have many-to-many relationships with genres and actors. The API also supports creating and managing these relationships. 
 
  The [`mattn/go-sqlite3`](https://github.com/mattn/go-sqlite3) driver is used to  interface with SQLite.
- Validation libary, [`go-playground/validator`](https://pkg.go.dev/github.com/go-playground/validator), is used for input validation of struct fields.
+ The validation library, [`go-playground/validator`](https://pkg.go.dev/github.com/go-playground/validator), is used for input validation of struct fields.
+ 
+
 ## Setup Instructions
 Clone the respository:
 ```bash
 git clone https://gitea.kood.tech/georgiisenotrusov/movies-api.git
 ```
+
 ## Usage Guide
-Start the server, using default database `movies.db`:
+Start the server using default database `movies.db` (created automatically):
 ```bash
 cd movies-api
 go run .
@@ -36,7 +39,6 @@ go run . -reset
 ```
 
 ---------------------
-
 
 Use `my-database.db`. If the database file does not already exist, it will be created and initialized with all necessary tables. No dummy data added.
 ```bash
@@ -133,11 +135,11 @@ Example request body:
 ## Bonus Features
 - **Pagination** for GET requests returning multiple entities, e.g. `GET /api/movies?page=0&size=10`
 - **Search** movies by title (case-insensitive, partial match search), e.g. `GET /api/movies/search?title=last`
+- **Panic recovery middleware** — clients receive an Internal Server Error (500) in the event of a handler panic
+- **Timeout middleware** — context-aware operations (e.g. database queries) are cancelled after a fixed duration instead of hanging indefinitely
 - **Prevention of SQL injection attacks** by using placeholder parameters
-
-- Use of **transactions** to execute multiple SQL statements in one atomic action to prevent partial database updates during execution failures
-
-- Use of **context** to end functions early if client disconnects
+- **Transactions** to execute multiple SQL statements as one atomic action to prevent partial database updates if an operation fails
+- **Context** to cancel context-aware operations if the client disconnects
 
 ## Team Members
 [Ellin Park](https://github.com/Ellin), [PLACEHOLDER](), [PLACEHOLDER]()
