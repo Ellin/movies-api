@@ -2,10 +2,12 @@ package main
 
 import (
 	"movies-api/internal/handlers"
+	"movies-api/internal/middleware"
 	"net/http"
+	"time"
 )
 
-func NewRouter(app *handlers.App) *http.ServeMux {
+func NewRouter(app *handlers.App) http.Handler {
 	mux := http.NewServeMux()
 
 	// movie routes
@@ -28,5 +30,10 @@ func NewRouter(app *handlers.App) *http.ServeMux {
 	mux.HandleFunc("PATCH /api/actor/{id}", app.PatchActor)
 	mux.HandleFunc("DELETE /api/actor/{id}", app.DeleteActor)
 
-	return mux
+	// Add middleware
+	var handler http.Handler = mux // This works because *http.ServeMux satisfies the http.Handler interface
+	handler = middleware.Timeout(5 * time.Second)(handler)
+	handler = middleware.RecoverPanic(handler)
+
+	return handler
 }
