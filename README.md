@@ -142,4 +142,4 @@ Example request body:
 - **Context** to cancel context-aware operations if the client disconnects
 
 ## Team Members
-[Ellin Park](https://github.com/Ellin), [PLACEHOLDER](), [PLACEHOLDER]()
+[Ellin Park](https://github.com/Ellin), [Anatolii Subbotin](https://github.com/Sub-bot-in), Georgii
