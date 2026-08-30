@@ -142,13 +142,24 @@ func (as *ActorService) GetActor(ctx context.Context, id int64) (models.Actor, e
 	return actor, err
 }
 
-func (as *ActorService) GetAllActors(ctx context.Context, pagination pagination.Pagination) ([]models.ActorSummary, error) {
+func (as *ActorService) GetAllActors(ctx context.Context, pagination pagination.Pagination) ([]models.ActorSummary, int, error) {
+	if err := pagination.Validate(); err != nil {
+		return nil, 0, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+	}
 	return as.repo.GetAllActors(ctx, pagination)
 }
 
-func (as *ActorService) GetAllActorsByName(ctx context.Context, name string, pagination pagination.Pagination) ([]models.ActorSummary, error) {
+func (as *ActorService) GetAllActorsByName(ctx context.Context, name string, pagination pagination.Pagination) ([]models.ActorSummary, int, error) {
+	if err := pagination.Validate(); err != nil {
+		return nil, 0, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+	}
+	if name == "" {
+		return nil, 0, fmt.Errorf("%w: actor name cannot be empty", errs.ErrInvalidUserInput)
+	}
 	name = strings.TrimSpace(name)
-	validateActorName(name)
+	if err := validateActorName(name); err != nil {
+		return nil, 0, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+	}
 	return as.repo.GetAllActorsByName(ctx, name, pagination)
 }
 
