@@ -101,6 +101,9 @@ func (app *App) PatchGenre(w http.ResponseWriter, r *http.Request) {
 
 	if patch.Name != nil {
 		*patch.Name = strings.TrimSpace(*patch.Name)
+	} else {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
 	}
 
 	genre, err := app.GenreService.PatchGenre(ctx, id, patch)
