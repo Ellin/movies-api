@@ -28,7 +28,7 @@ func ResetDatabase(db *sql.DB, app *handlers.App) error {
 	fmt.Println("Deleted all data from database")
 
 	// Reset schema and recreate tables
-	if err := InitDB(db); err != nil {
+	if err := CreateTables(db); err != nil {
 		return err
 	}
 	fmt.Println("Reset database schema")
