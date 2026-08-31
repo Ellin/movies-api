@@ -118,6 +118,18 @@ func (ms *MovieService) validateFilter(filter models.MovieFilter) error {
 	return nil
 }
 
+func (ms *MovieService) GetMovieSearch(ctx context.Context, title string, pag pagination.Pagination) ([]models.MovieDetail, int, error) {
+	if err := pag.Validate(); err != nil {
+		return nil, 0, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
+	}
+	movies, totalcount, err := ms.repo.GetMovieSearch(ctx, title, pag)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return movies, totalcount, nil
+}
+
 func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePatch) (models.MovieDetail, error) {
 	// Struct level validation
 	if err := ms.validate.Struct(patch); err != nil {

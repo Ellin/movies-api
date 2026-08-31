@@ -68,21 +68,7 @@ func (gs *GenreService) GetGenre(ctx context.Context, id int64) (models.Genre, e
 	return gs.repo.GetGenre(ctx, id)
 }
 
-func (ms *MovieService) GetMovieSearch(ctx context.Context, title string, pag pagination.Pagination) ([]models.MovieDetail, int, error) {
-	if err := pag.Validate(); err != nil {
-		return nil, 0, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
-	}
-	movies, totalcount, err := ms.repo.GetMovieSearch(ctx, title, pag)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return movies, totalcount, nil
-}
-
 func (gs *GenreService) PatchGenre(ctx context.Context, id int64, patch GenrePatch) (models.GenreSummary, error) {
-	g := models.GenreSummary{ID: id}
-
 	if err := gs.validate.Struct(patch); err != nil {
 		var validationErrors validator.ValidationErrors
 		if errors.As(err, &validationErrors) {
@@ -91,15 +77,15 @@ func (gs *GenreService) PatchGenre(ctx context.Context, id int64, patch GenrePat
 		return models.GenreSummary{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
 
+	g := models.GenreSummary{ID: id, Name: *patch.Name}
 	g, err := gs.repo.PatchGenre(ctx, g)
 	if err != nil {
 		return models.GenreSummary{}, err
 	}
-
 	return g, nil
 }
 
-func (gs *MovieService) DeleteGenre(ctx context.Context, id int64, force bool) error {
+func (gs *GenreService) DeleteGenre(ctx context.Context, id int64, force bool) error {
 	err := gs.repo.DeleteGenre(ctx, id, force)
 	return err
 }
