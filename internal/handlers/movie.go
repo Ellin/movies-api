@@ -21,7 +21,7 @@ func (app *App) PostMovie(w http.ResponseWriter, r *http.Request) {
 	sub := service.MovieSubmission{}
 
 	if err := json.NewDecoder(r.Body).Decode(&sub); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		errs.WriteError(w, fmt.Errorf("%w: invalid request body", errs.ErrInvalidUserInput))
 		return
 	}
 
@@ -138,7 +138,7 @@ func (app *App) PatchMovie(w http.ResponseWriter, r *http.Request) {
 	patch := service.MoviePatch{}
 
 	if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		errs.WriteError(w, fmt.Errorf("%w: invalid request body", errs.ErrInvalidUserInput))
 		return
 	}
 
