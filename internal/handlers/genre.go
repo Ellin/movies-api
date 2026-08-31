@@ -19,7 +19,7 @@ func (app *App) PostGenre(w http.ResponseWriter, r *http.Request) {
 
 	//parse JSON into DTO
 	if err := json.NewDecoder(r.Body).Decode(&sub); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		errs.WriteError(w, errs.ErrInvalidUserInput)
 		return
 	}
 
@@ -69,7 +69,7 @@ func (app *App) GetGenre(w http.ResponseWriter, r *http.Request) {
 
 	id, err := parseID(r.PathValue("id"))
 	if err != nil {
-		http.NotFound(w, r)
+		errs.WriteError(w, errs.ErrInvalidUserInput)
 		return
 	}
 
@@ -88,21 +88,21 @@ func (app *App) PatchGenre(w http.ResponseWriter, r *http.Request) {
 
 	id, err := parseID(r.PathValue("id"))
 	if err != nil {
-		http.NotFound(w, r)
+		errs.WriteError(w, errs.ErrInvalidUserInput)
 		return
 	}
 
 	patch := service.GenrePatch{}
 
 	if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		errs.WriteError(w, errs.ErrInvalidUserInput)
 		return
 	}
 
 	if patch.Name != nil {
 		*patch.Name = strings.TrimSpace(*patch.Name)
 	} else {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		errs.WriteError(w, errs.ErrInvalidUserInput)
 		return
 	}
 
@@ -122,13 +122,13 @@ func (app *App) DeleteGenre(w http.ResponseWriter, r *http.Request) {
 
 	id, err := parseID(r.PathValue("id"))
 	if err != nil {
-		http.NotFound(w, r)
+		errs.WriteError(w, errs.ErrInvalidUserInput)
 		return
 	}
 
 	var force bool = r.URL.Query().Get("force") == "true"
 
-	if err := app.MovieService.DeleteGenre(ctx, id, force); err != nil {
+	if err := app.GenreService.DeleteGenre(ctx, id, force); err != nil {
 		errs.WriteError(w, err)
 		return
 	}

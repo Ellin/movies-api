@@ -164,7 +164,7 @@ func (r *Repo) GetActorsByMoviePaginated(ctx context.Context, movieID int64, pag
 	// Get actor data associated with the given movie ID
 	query := `SELECT COUNT(*) OVER() AS total_count, ma.actor_id, a.name
 	FROM movies_actors ma JOIN actors a ON ma.actor_id = a.id
-	WHERE ma.movie_id = ? 
+	WHERE ma.movie_id = ?
 	ORDER BY ma.actor_id
 	LIMIT ? OFFSET ?;`
 
