@@ -28,8 +28,6 @@ func main() {
 	defer db.Close()
 	fmt.Printf("Connected to SQLite database %s\n", dbFile)
 
-	// Initialize the application's dependencies
-	repo := &repository.Repo{DB: db}
 	// Intialize validator
 	validate := validator.New()
 
@@ -42,8 +40,9 @@ func main() {
 		return name
 	})
 
+	// Initialize the application's dependencies
+	repo := &repository.Repo{DB: db}
 	app := handlers.App{
-		Repo:         repo, // to be deleted once all services are set
 		MovieService: service.NewMovieService(repo, validate),
 		ActorService: service.NewActorService(repo, validate),
 		GenreService: service.NewGenreService(repo, validate),
@@ -52,7 +51,7 @@ func main() {
 	// Check database reset flag
 	if reset {
 		// Clear database and seed with dummy data
-		if err := database.ResetDatabase(&app); err != nil {
+		if err := database.ResetDatabase(db, &app); err != nil {
 			log.Fatalln("Reset database failure:", err)
 			return
 		}

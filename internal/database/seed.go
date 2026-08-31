@@ -2,13 +2,14 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"movies-api/internal/handlers"
 	"movies-api/internal/service"
 )
 
 // resetDatabase deletes all data and reseeds database with dummy data. Used for testing.
-func ResetDatabase(app *handlers.App) error {
+func ResetDatabase(db *sql.DB, app *handlers.App) error {
 	ctx := context.Background()
 
 	query := `
@@ -20,14 +21,14 @@ func ResetDatabase(app *handlers.App) error {
 	`
 
 	// Delete all data
-	_, err := app.Repo.DB.ExecContext(ctx, query)
+	_, err := db.ExecContext(ctx, query)
 	if err != nil {
 		return err
 	}
 	fmt.Println("Deleted all data from database")
 
 	// Reset schema and recreate tables
-	if err := InitDB(app.Repo.DB); err != nil {
+	if err := InitDB(db); err != nil {
 		return err
 	}
 	fmt.Println("Reset database schema")
