@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"movies-api/internal/errs"
 	"movies-api/internal/models"
 	"movies-api/internal/pagination"
@@ -19,7 +20,7 @@ func (app *App) PostGenre(w http.ResponseWriter, r *http.Request) {
 
 	//parse JSON into DTO
 	if err := json.NewDecoder(r.Body).Decode(&sub); err != nil {
-		errs.WriteError(w, errs.ErrInvalidUserInput)
+		errs.WriteError(w, fmt.Errorf("%w: invalid request body", errs.ErrInvalidUserInput))
 		return
 	}
 
@@ -95,7 +96,7 @@ func (app *App) PatchGenre(w http.ResponseWriter, r *http.Request) {
 	patch := service.GenrePatch{}
 
 	if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
-		errs.WriteError(w, errs.ErrInvalidUserInput)
+		errs.WriteError(w, fmt.Errorf("%w: invalid request body", errs.ErrInvalidUserInput))
 		return
 	}
 

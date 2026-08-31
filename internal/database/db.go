@@ -78,7 +78,7 @@ func createTableMoviesActors(db *sql.DB) (sql.Result, error) {
 	return db.Exec(query)
 }
 
-func InitDB(db *sql.DB) error {
+func CreateTables(db *sql.DB) error {
 	_, err := createTableGenres(db)
 	if err != nil {
 		return fmt.Errorf("Creating genres table: %w", err)

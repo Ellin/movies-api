@@ -17,7 +17,7 @@ func (app *App) PostActor(w http.ResponseWriter, r *http.Request) {
 	sub := service.ActorSubmission{}
 
 	if err := json.NewDecoder(r.Body).Decode(&sub); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		errs.WriteError(w, fmt.Errorf("%w: invalid request body", errs.ErrInvalidUserInput))
 		return
 	}
 
@@ -101,7 +101,7 @@ func (app *App) PatchActor(w http.ResponseWriter, r *http.Request) {
 	patch := service.ActorPatch{}
 
 	if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		errs.WriteError(w, fmt.Errorf("%w: invalid request body", errs.ErrInvalidUserInput))
 		return
 	}
 
