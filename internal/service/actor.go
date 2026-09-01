@@ -36,7 +36,7 @@ type ActorPatch struct {
 }
 
 var earliestActorBirthDate = time.Date(
-	1914, 11, 8,
+	1886, 1, 2,
 	0, 0, 0, 0,
 	time.UTC,
 )
@@ -119,8 +119,38 @@ func validateActorName(name string) error {
 		return errors.New("name is too long")
 	}
 
-	for _, r := range name {
-		if unicode.IsLetter(r) || unicode.IsSpace(r) || r == '-' || r == '\'' {
+	runes := []rune(name)
+
+	if !unicode.IsLetter(runes[0]) || !unicode.IsLetter(runes[len(runes)-1]) {
+		return errors.New("name must start and end with a letter")
+	}
+
+	for i, r := range runes {
+		if unicode.IsLetter(r) {
+			continue
+		}
+
+		if unicode.IsSpace(r) {
+			// Only one space is allowed between name parts.
+			if i == 0 ||
+				i == len(runes)-1 ||
+				!unicode.IsLetter(runes[i-1]) ||
+				!unicode.IsLetter(runes[i+1]) {
+				return errors.New("name must contain only single spaces between words")
+			}
+
+			continue
+		}
+
+		if r == '-' || r == '\'' {
+			// Hyphen/apostrophe must be between two letters.
+			if i == 0 ||
+				i == len(runes)-1 ||
+				!unicode.IsLetter(runes[i-1]) ||
+				!unicode.IsLetter(runes[i+1]) {
+				return errors.New("hyphen and apostrophe must be between letters")
+			}
+
 			continue
 		}
 
