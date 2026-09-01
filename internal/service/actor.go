@@ -78,6 +78,20 @@ func (as *ActorService) AddActor(ctx context.Context, sub ActorSubmission) (mode
 			err,
 		)
 	}
+	for _, movieID := range sub.MovieIDs {
+		movie, err := as.repo.GetMovie(ctx, movieID)
+		if err != nil {
+			return models.Actor{}, err
+		}
+
+		if err := validateActorMovieDates(sub.BirthDate, movie.ReleaseYear); err != nil {
+			return models.Actor{}, fmt.Errorf(
+				"%w: %w",
+				errs.ErrInvalidUserInput,
+				err,
+			)
+		}
+	}
 
 	newActor := models.Actor{
 		Name:      strings.TrimSpace(sub.Name),
@@ -235,12 +249,39 @@ func (as *ActorService) PatchActor(ctx context.Context, id int64, patch ActorPat
 				err,
 			)
 		}
+		for _, movieID := range actor.MovieIDs {
+			movie, err := as.repo.GetMovie(ctx, movieID)
+			if err != nil {
+				return models.Actor{}, err
+			}
 
+			if err := validateActorMovieDates(actor.BirthDate, movie.ReleaseYear); err != nil {
+				return models.Actor{}, fmt.Errorf(
+					"%w: %w",
+					errs.ErrInvalidUserInput,
+					err,
+				)
+			}
+		}
 		actor.BirthDate = *patch.BirthDate
 	}
 
 	// Replace movie relationships if provided
 	if patch.MovieIDs != nil {
+		for _, movieID := range *patch.MovieIDs {
+			movie, err := as.repo.GetMovie(ctx, movieID)
+			if err != nil {
+				return models.Actor{}, err
+			}
+
+			if err := validateActorMovieDates(actor.BirthDate, movie.ReleaseYear); err != nil {
+				return models.Actor{}, fmt.Errorf(
+					"%w: %w",
+					errs.ErrInvalidUserInput,
+					err,
+				)
+			}
+		}
 		actor.MovieIDs = *patch.MovieIDs
 	}
 
