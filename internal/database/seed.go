@@ -178,7 +178,7 @@ func seedActors(ctx context.Context, as *service.ActorService) error {
 		},
 		{
 			Name:      "Lily Simmons",
-			BirthDate: "1997-07-13",
+			BirthDate: "1987-07-13",
 		},
 		{
 			Name:      "Nathan Price",
