@@ -36,7 +36,7 @@ type ActorPatch struct {
 }
 
 var earliestActorBirthDate = time.Date(
-	1914, 11, 8,
+	1886, 1, 2,
 	0, 0, 0, 0,
 	time.UTC,
 )
@@ -77,6 +77,20 @@ func (as *ActorService) AddActor(ctx context.Context, sub ActorSubmission) (mode
 			errs.ErrInvalidUserInput,
 			err,
 		)
+	}
+	for _, movieID := range sub.MovieIDs {
+		movie, err := as.repo.GetMovie(ctx, movieID)
+		if err != nil {
+			return models.Actor{}, err
+		}
+
+		if err := validateActorMovieDates(sub.BirthDate, movie.ReleaseYear); err != nil {
+			return models.Actor{}, fmt.Errorf(
+				"%w: %w",
+				errs.ErrInvalidUserInput,
+				err,
+			)
+		}
 	}
 
 	newActor := models.Actor{
@@ -119,8 +133,38 @@ func validateActorName(name string) error {
 		return errors.New("name is too long")
 	}
 
-	for _, r := range name {
-		if unicode.IsLetter(r) || unicode.IsSpace(r) || r == '-' || r == '\'' {
+	runes := []rune(name)
+
+	if !unicode.IsLetter(runes[0]) || !unicode.IsLetter(runes[len(runes)-1]) {
+		return errors.New("name must start and end with a letter")
+	}
+
+	for i, r := range runes {
+		if unicode.IsLetter(r) {
+			continue
+		}
+
+		if unicode.IsSpace(r) {
+			// Only one space is allowed between name parts.
+			if i == 0 ||
+				i == len(runes)-1 ||
+				!unicode.IsLetter(runes[i-1]) ||
+				!unicode.IsLetter(runes[i+1]) {
+				return errors.New("name must contain only single spaces between words")
+			}
+
+			continue
+		}
+
+		if r == '-' || r == '\'' {
+			// Hyphen/apostrophe must be between two letters.
+			if i == 0 ||
+				i == len(runes)-1 ||
+				!unicode.IsLetter(runes[i-1]) ||
+				!unicode.IsLetter(runes[i+1]) {
+				return errors.New("hyphen and apostrophe must be between letters")
+			}
+
 			continue
 		}
 
@@ -205,12 +249,39 @@ func (as *ActorService) PatchActor(ctx context.Context, id int64, patch ActorPat
 				err,
 			)
 		}
+		for _, movieID := range actor.MovieIDs {
+			movie, err := as.repo.GetMovie(ctx, movieID)
+			if err != nil {
+				return models.Actor{}, err
+			}
 
+			if err := validateActorMovieDates(actor.BirthDate, movie.ReleaseYear); err != nil {
+				return models.Actor{}, fmt.Errorf(
+					"%w: %w",
+					errs.ErrInvalidUserInput,
+					err,
+				)
+			}
+		}
 		actor.BirthDate = *patch.BirthDate
 	}
 
 	// Replace movie relationships if provided
 	if patch.MovieIDs != nil {
+		for _, movieID := range *patch.MovieIDs {
+			movie, err := as.repo.GetMovie(ctx, movieID)
+			if err != nil {
+				return models.Actor{}, err
+			}
+
+			if err := validateActorMovieDates(actor.BirthDate, movie.ReleaseYear); err != nil {
+				return models.Actor{}, fmt.Errorf(
+					"%w: %w",
+					errs.ErrInvalidUserInput,
+					err,
+				)
+			}
+		}
 		actor.MovieIDs = *patch.MovieIDs
 	}
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"movies-api/internal/errs"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -37,4 +38,21 @@ func handleValidationError(validationErrors validator.ValidationErrors) error {
 	}
 
 	return errors.Join(allErrs...)
+}
+
+func validateActorMovieDates(birthDate string, releaseYear int) error {
+	birthDateParsed, err := time.Parse("2006-01-02", birthDate)
+	if err != nil {
+		return fmt.Errorf("invalid birth date: %w", err)
+	}
+
+	if birthDateParsed.Year() > releaseYear {
+		return fmt.Errorf(
+			"actor cannot participate in a movie released in %d before their birth in %d",
+			releaseYear,
+			birthDateParsed.Year(),
+		)
+	}
+
+	return nil
 }

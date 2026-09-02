@@ -55,6 +55,20 @@ func (ms *MovieService) AddMovie(ctx context.Context, sub MovieSubmission) (mode
 	if err := validateReleaseYear(sub.ReleaseYear); err != nil {
 		return models.MovieDetail{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 	}
+	for _, actorID := range sub.ActorIDs {
+		actor, err := ms.repo.GetActor(ctx, actorID)
+		if err != nil {
+			return models.MovieDetail{}, err
+		}
+
+		if err := validateActorMovieDates(actor.BirthDate, sub.ReleaseYear); err != nil {
+			return models.MovieDetail{}, fmt.Errorf(
+				"%w: %w",
+				errs.ErrInvalidUserInput,
+				err,
+			)
+		}
+	}
 
 	newMovie := models.Movie{
 		Title:       sub.Title,
@@ -158,6 +172,21 @@ func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePat
 		if err := validateReleaseYear(*patch.ReleaseYear); err != nil {
 			return models.MovieDetail{}, fmt.Errorf("%w: %w", errs.ErrInvalidUserInput, err)
 		}
+		//  Validate that all participating actors birth dates
+		for _, actorID := range movie.ActorIDs {
+			actor, err := ms.repo.GetActor(ctx, actorID)
+			if err != nil {
+				return models.MovieDetail{}, err
+			}
+
+			if err := validateActorMovieDates(actor.BirthDate, *patch.ReleaseYear); err != nil {
+				return models.MovieDetail{}, fmt.Errorf(
+					"%w: %w",
+					errs.ErrInvalidUserInput,
+					err,
+				)
+			}
+		}
 		movie.ReleaseYear = *patch.ReleaseYear
 	}
 
@@ -170,6 +199,19 @@ func (ms *MovieService) PatchMovie(ctx context.Context, id int64, patch MoviePat
 	}
 
 	if patch.ActorIDs != nil {
+		for _, actorID := range *patch.ActorIDs {
+			actor, err := ms.repo.GetActor(ctx, actorID)
+			if err != nil {
+				return models.MovieDetail{}, err
+			}
+			if err := validateActorMovieDates(actor.BirthDate, movie.ReleaseYear); err != nil {
+				return models.MovieDetail{}, fmt.Errorf(
+					"%w: %w",
+					errs.ErrInvalidUserInput,
+					err,
+				)
+			}
+		}
 		movie.ActorIDs = *patch.ActorIDs
 	}
 
