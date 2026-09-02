@@ -77,7 +77,7 @@ Query parameters can be combined, including both filter and pagination parameter
 Get movies released in 1999:
 `GET /api/movies?year=1999`
 
-Get movies released in 1999 and featuring actor with ID 4: `GET /api/movies?year=1999&actor=16`
+Get movies released in 1999 and featuring actor with ID 4: `GET /api/movies?year=1999&actor=4`
 
 
 ### Other filters
