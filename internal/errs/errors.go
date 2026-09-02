@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 	"log"
+	"movies-api/internal/pagination"
 	"net/http"
 )
-
-var ErrForce = errors.New("operation requires force")
 
 // WriteError chooses the appropriate error response and writes to http.ResponseWrite
 func WriteError(w http.ResponseWriter, err error) {
@@ -31,6 +30,11 @@ func WriteError(w http.ResponseWriter, err error) {
 		return
 	}
 
+	if errors.Is(err, pagination.ErrPaginationParams) {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	if errors.Is(err, ErrForce) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -42,3 +46,4 @@ func WriteError(w http.ResponseWriter, err error) {
 
 var ErrInvalidUserInput = errors.New("invalid input")
 var ErrNotFound = errors.New("record not found")
+var ErrForce = errors.New("operation requires force")

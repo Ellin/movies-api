@@ -1,6 +1,7 @@
 package pagination
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -10,6 +11,15 @@ type Pagination struct {
 	Page     int
 	PageSize int
 }
+
+const (
+	minPage     = 0
+	maxPage     = 100000000 // capped to 100 million prevent int64 overflow on Offset calculation
+	minPageSize = 1
+	maxPageSize = 100
+)
+
+var ErrPaginationParams = errors.New("invalid pagination parameter")
 
 // Limit returns the number of results per page (i.e. page size).
 func (p *Pagination) Limit() int {
@@ -24,12 +34,16 @@ func (p *Pagination) Offset() int {
 
 // Validate enforces pagination parameter limits.
 func (p *Pagination) Validate() error {
-	if p.Page < 0 {
-		return fmt.Errorf("page must not be negative")
+	if p.Page < minPage {
+		return fmt.Errorf("%w: page must not be negative", ErrPaginationParams)
 	}
 
-	if p.PageSize < 1 || p.PageSize > 100 {
-		return fmt.Errorf("size must be in range 1 - 100")
+	if p.Page > maxPage {
+		return fmt.Errorf("%w: page too large", ErrPaginationParams)
+	}
+
+	if p.PageSize < minPageSize || p.PageSize > maxPageSize {
+		return fmt.Errorf("%w: size must be in range %d - %d", ErrPaginationParams, minPageSize, maxPageSize)
 	}
 
 	return nil
@@ -39,7 +53,7 @@ func (p *Pagination) Validate() error {
 func Parse(query url.Values) (Pagination, error) {
 	// Set default vaules
 	pagination := Pagination{
-		Page:     0,
+		Page:     minPage,
 		PageSize: 10,
 	}
 
@@ -47,7 +61,11 @@ func Parse(query url.Values) (Pagination, error) {
 	if queryPage := query.Get("page"); queryPage != "" {
 		page, err := strconv.Atoi(queryPage)
 		if err != nil {
-			return Pagination{}, fmt.Errorf("page must be an integer")
+			var numErr *strconv.NumError
+			if errors.As(err, &numErr) && errors.Is(numErr.Err, strconv.ErrRange) {
+				return Pagination{}, fmt.Errorf("%w: page too large", ErrPaginationParams)
+			}
+			return Pagination{}, fmt.Errorf("%w: page must be an integer", ErrPaginationParams)
 		}
 		pagination.Page = page
 	}
@@ -56,7 +74,11 @@ func Parse(query url.Values) (Pagination, error) {
 	if querySize := query.Get("size"); querySize != "" {
 		size, err := strconv.Atoi(querySize)
 		if err != nil {
-			return Pagination{}, fmt.Errorf("size must be an integer")
+			var numErr *strconv.NumError
+			if errors.As(err, &numErr) && errors.Is(numErr.Err, strconv.ErrRange) {
+				return Pagination{}, fmt.Errorf("%w: size too large", ErrPaginationParams)
+			}
+			return Pagination{}, fmt.Errorf("%w: size must be an integer", ErrPaginationParams)
 		}
 		pagination.PageSize = size
 	}
