@@ -27,7 +27,7 @@ func OpenDB(dsn string) (*sql.DB, error) {
 func createTableGenres(db *sql.DB) (sql.Result, error) {
 	query := `CREATE TABLE IF NOT EXISTS genres (
 		id INTEGER PRIMARY KEY,
-		name TEXT NOT NULL
+		name TEXT NOT NULL UNIQUE
 	);`
 
 	return db.Exec(query)
@@ -38,7 +38,8 @@ func createTableMovies(db *sql.DB) (sql.Result, error) {
 		id INTEGER PRIMARY KEY,
 		title TEXT NOT NULL,
 		releaseYear INTEGER NOT NULL,
-		duration INTEGER NOT NULL
+		duration INTEGER NOT NULL,
+		UNIQUE(title, releaseYear, duration)
 	);`
 
 	return db.Exec(query)
