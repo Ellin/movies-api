@@ -19,6 +19,9 @@ func (r *Repo) AddGenre(ctx context.Context, gnr models.Genre) (models.Genre, er
 
 	res, err := r.DB.ExecContext(ctx, query, gnr.Name)
 	if err != nil {
+		if isUniqueErr(err) {
+			return models.Genre{}, fmt.Errorf("%w: genre with same name already exists", errs.ErrDuplicate)
+		}
 		return models.Genre{}, fmt.Errorf("executing insertion to genres table: %w", err)
 	}
 

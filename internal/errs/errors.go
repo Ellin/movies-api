@@ -40,6 +40,12 @@ func WriteError(w http.ResponseWriter, err error) {
 		return
 	}
 
+	if errors.Is(err, ErrDuplicate) {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+
 	log.Println("internal server error:", err)
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
@@ -47,3 +53,4 @@ func WriteError(w http.ResponseWriter, err error) {
 var ErrInvalidUserInput = errors.New("invalid input")
 var ErrNotFound = errors.New("record not found")
 var ErrForce = errors.New("operation requires force")
+var ErrDuplicate = errors.New("duplicate entry")

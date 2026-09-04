@@ -25,6 +25,9 @@ func (r *Repo) AddMovie(ctx context.Context, m models.Movie) (models.MovieDetail
 	query := `INSERT INTO movies (title, releaseYear, duration) VALUES (?, ?, ?);`
 	result, err := tx.ExecContext(ctx, query, m.Title, m.ReleaseYear, m.Duration)
 	if err != nil {
+		if isUniqueErr(err) {
+			return models.MovieDetail{}, fmt.Errorf("%w: movie with same title, release year, and duration already exists", errs.ErrDuplicate)
+		}
 		return models.MovieDetail{}, fmt.Errorf("adding movie: %w", err)
 	}
 

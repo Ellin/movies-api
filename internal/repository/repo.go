@@ -23,3 +23,14 @@ func isForeignKeyError(err error) bool {
 
 	return false
 }
+
+// isUniqueErr checks if the error violates unique constraint
+func isUniqueErr(err error) bool {
+	var sqliteErr sqlite3.Error
+
+	if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+		return true
+	}
+
+	return false
+}
