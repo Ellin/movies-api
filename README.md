@@ -63,7 +63,16 @@ The following endpoints can be used with all entities, where `{entity}` is `movi
 | **PATCH**    | `/api/{entity}/{id}` | Partially update an existing entity |
 | **DELETE** | `/api/{entity}/{id}` | Delete an entity |
 
-### Filtering Movies
+### Force deletion
+By default, only resources without relationships can be deleted using the `DELETE` endpoints.
+For example, if a movie *"The Last Horizon"* is associated with the genre *"Action"*, a relationship exists between them — neither resource can be deleted by default.
+
+To delete any resource with existing relationships, the `force` query parameter must be added:
+`/api/{entity}/{id}?force=true`
+
+This removes any relationships along with the specified resource.
+
+### Filtering movies
 When retrieving movies using endpoint `GET /api/movies`, the following query parameters can be used as filters:
 | Query parameter |  Description |
 |-----------------|-------------|
@@ -135,11 +144,13 @@ Example request body:
 ## Bonus Features
 - **Pagination** for GET requests returning multiple entities, e.g. `GET /api/movies?page=0&size=10`
 - **Search** movies by title (case-insensitive, partial match search), e.g. `GET /api/movies/search?title=last`
+- **Compound filtering** using multiple query parameters
 - **Panic recovery middleware** — clients receive an Internal Server Error (500) in the event of a handler panic
 - **Timeout middleware** — context-aware operations (e.g. database queries) are cancelled after a fixed duration instead of hanging indefinitely
 - **Prevention of SQL injection attacks** by using placeholder parameters
 - **Transactions** to execute multiple SQL statements as one atomic action to prevent partial database updates if an operation fails
 - **Context** to cancel context-aware operations if the client disconnects
+- **Database reset and seeding** through CLI flag `-reset` for easy testing
 
 ## Team Members
 [Ellin Park](https://github.com/Ellin), [Anatolii Subbotin](https://github.com/Sub-bot-in), Georgii
