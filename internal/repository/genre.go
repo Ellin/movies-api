@@ -123,6 +123,9 @@ func (r *Repo) PatchGenre(ctx context.Context, g models.GenreSummary) (models.Ge
 	WHERE id = ?;`
 	result, err := r.DB.ExecContext(ctx, query, g.Name, g.ID)
 	if err != nil {
+		if isUniqueErr(err) {
+			return models.GenreSummary{}, fmt.Errorf("%w: genre with same name already exists", errs.ErrDuplicate)
+		}
 		return models.GenreSummary{}, fmt.Errorf("updating genre: %w", err)
 	}
 	rows, err := result.RowsAffected()
