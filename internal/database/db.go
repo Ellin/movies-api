@@ -27,7 +27,7 @@ func OpenDB(dsn string) (*sql.DB, error) {
 func createTableGenres(db *sql.DB) (sql.Result, error) {
 	query := `CREATE TABLE IF NOT EXISTS genres (
 		id INTEGER PRIMARY KEY,
-		name TEXT NOT NULL UNIQUE
+		name TEXT NOT NULL COLLATE NOCASE UNIQUE
 	);`
 
 	return db.Exec(query)
@@ -36,7 +36,7 @@ func createTableGenres(db *sql.DB) (sql.Result, error) {
 func createTableMovies(db *sql.DB) (sql.Result, error) {
 	query := `CREATE TABLE IF NOT EXISTS movies (
 		id INTEGER PRIMARY KEY,
-		title TEXT NOT NULL,
+		title TEXT NOT NULL COLLATE NOCASE,
 		releaseYear INTEGER NOT NULL,
 		duration INTEGER NOT NULL,
 		UNIQUE(title, releaseYear, duration)
@@ -48,7 +48,7 @@ func createTableMovies(db *sql.DB) (sql.Result, error) {
 func createTableActors(db *sql.DB) (sql.Result, error) {
 	query := `CREATE TABLE IF NOT EXISTS actors (
 		id INTEGER PRIMARY KEY,
-		name TEXT NOT NULL,
+		name TEXT NOT NULL COLLATE NOCASE,
 		birth_date TEXT NOT NULL
 	);`
 

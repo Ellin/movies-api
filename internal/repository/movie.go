@@ -395,6 +395,9 @@ func (r *Repo) PatchMovie(ctx context.Context, m models.Movie) (models.MovieDeta
 
 	// Update movies table
 	if err := r.updateMovie(ctx, tx, m); err != nil {
+		if isUniqueErr(err) {
+			return models.MovieDetail{}, fmt.Errorf("%w: movie with same title, release year, and duration already exists", errs.ErrDuplicate)
+		}
 		return models.MovieDetail{}, err
 	}
 
